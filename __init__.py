@@ -1,6 +1,8 @@
 # __init__.py
 import bpy
+from bpy.app.handlers import persistent
 import logging
+from . import utils
 
 if "bpy" in locals():
     import importlib
@@ -28,6 +30,13 @@ bl_info = {
     "tracker_url": "https://github.com/Devinci297/MSFS-LOD-Maker/issues",
     "category": "Scene"
 }
+
+@persistent
+def load_handler(dummy):
+        pass
+        # base_collection,parent_collection = utils.find_base_collection()
+        # if base_collection:
+        #     utils.update_stats_report(bpy.context,utils.get_base_name_from_collection(base_collection))
 
 
 def setup_logging():
@@ -61,6 +70,8 @@ def register():
             pass
         raise
 
+    bpy.app.handlers.load_post.append(load_handler)
+
 
 def unregister():
     """Unregister the addon with improved error handling."""
@@ -71,6 +82,7 @@ def unregister():
         print("MSFS LOD Maker addon unregistered successfully")
     except Exception as e:
         print(f"Error during MSFS LOD Maker unregistration: {str(e)}")
+    bpy.app.handlers.load_post.clear()
 
 
 if __name__ == "__main__":

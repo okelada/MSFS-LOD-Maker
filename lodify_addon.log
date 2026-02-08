@@ -1,0 +1,26 @@
+2026-02-08 19:45:07,050 - root - INFO - MSFS LOD Maker addon logging initialized
+2026-02-08 19:45:07,526 - glTFImporter - INFO - Starting glTF 2.0 export
+2026-02-08 19:45:07,528 - glTFImporter - INFO - Extracting primitive: edificio.001
+2026-02-08 19:45:08,228 - glTFImporter - INFO - Primitives created: 1
+2026-02-08 19:45:08,228 - glTFImporter - INFO - Extracting primitive: Cube.023
+2026-02-08 19:45:08,228 - glTFImporter - INFO - Primitives created: 1
+2026-02-08 19:45:08,273 - glTFImporter - INFO - Finished glTF 2.0 export in 0.7476963996887207 s
+2026-02-08 19:45:08,291 - glTFImporter - INFO - Starting glTF 2.0 export
+2026-02-08 19:45:08,291 - glTFImporter - INFO - Extracting primitive: edificio.002
+2026-02-08 19:45:09,002 - glTFImporter - INFO - Primitives created: 1
+2026-02-08 19:45:09,002 - glTFImporter - INFO - Extracting primitive: Cube.038
+2026-02-08 19:45:09,002 - glTFImporter - INFO - Primitives created: 1
+2026-02-08 19:45:09,056 - glTFImporter - INFO - Finished glTF 2.0 export in 0.7650556564331055 s
+2026-02-08 19:45:09,073 - glTFImporter - INFO - Starting glTF 2.0 export
+2026-02-08 19:45:09,077 - glTFImporter - INFO - Extracting primitive: edificio.003
+2026-02-08 19:45:09,083 - glTFImporter - INFO - Primitives created: 1
+2026-02-08 19:45:09,084 - glTFImporter - INFO - Extracting primitive: Cube.042
+2026-02-08 19:45:09,084 - glTFImporter - INFO - Primitives created: 1
+2026-02-08 19:45:09,086 - glTFImporter - INFO - Finished glTF 2.0 export in 0.012691020965576172 s
+2026-02-08 19:45:09,098 - glTFImporter - INFO - Starting glTF 2.0 export
+2026-02-08 19:45:09,098 - glTFImporter - WARNING - Mesh edificio.004 is not valid, and may be exported wrongly
+2026-02-08 19:45:09,098 - glTFImporter - INFO - Extracting primitive: edificio.004
+2026-02-08 19:45:09,098 - glTFImporter - INFO - Primitives created: 1
+2026-02-08 19:45:09,098 - glTFImporter - INFO - Extracting primitive: Cube.043
+2026-02-08 19:45:09,098 - glTFImporter - INFO - Primitives created: 1
+2026-02-08 19:45:09,098 - glTFImporter - INFO - Finished glTF 2.0 export in 0.0005645751953125 s
