@@ -138,7 +138,7 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
 
 class LODIFY_PT_msfs_optimization(bpy.types.Panel):
     """MSFS optimization settings panel."""
-    bl_label = "MSFS Optimization"
+    bl_label = "MSFS LOD MinSizes"
     bl_idname = "LODIFY_PT_msfs_optimization"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -169,7 +169,6 @@ class LODIFY_PT_msfs_optimization(bpy.types.Panel):
         if base_collection and  len(list(utils.get_generated_lod_list())) > 0:
             # Set Default button with enhanced styling
             default_op = row.operator("lodify.set_default_lod_values", text="Set Default MinSizes", icon='PRESET')
-            
             # Calculate button
             calc_op = row.operator("lodify.calculate_msfs_lod_values", text="Calculate & Apply", icon='AUTO')
 
@@ -294,7 +293,7 @@ class LODIFY_PT_modifier_tools(bpy.types.Panel):
         base_collection,parent_collection = utils.find_base_collection()
         
         if base_collection:
-            generated = len(list(bpy.utils.get_generated_lod_list())) > 0
+            generated = len(list(utils.get_generated_lod_list())) > 0
         if generated:
             # Create buttons for each LOD
             for i, item in enumerate(utils.get_generated_lod_list()):

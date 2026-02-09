@@ -88,7 +88,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('UNSUBDIVIDE', "Un-Subdivide", "Use decimate un-subdivide method for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
-        default='PLANAR'
+        default='SKIP'
     )
 
     lod1_pass1_method: EnumProperty(
@@ -103,7 +103,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
-        default='SKIP'
+        default='PLANAR'
     )
 
     lod1_decimate_planar_angle: IntProperty(
@@ -176,7 +176,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('UNSUBDIVIDE', "Un-Subdivide", "Use decimate un-subdivide method for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
-        default='PLANAR'
+        default='SKIP'
     )
 
     lod2_pass1_method: EnumProperty(
@@ -191,7 +191,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
-        default='SKIP'
+        default='PLANAR'
     )
 
     lod2_decimate_planar_angle: IntProperty(
@@ -279,7 +279,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
-        default='SKIP'
+        default='SHRINKWRAP + UNSUBDIVIDE'
     )
 
     lod3_decimate_planar_angle: IntProperty(
@@ -303,7 +303,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
     lod3_decimate_unsubdiv_iterations: IntProperty(
         name="Decimate Un-subdivide iterations - LOD3",
         description="Number of Un-subdivide iterations of the Decimate Modifier for this LOD",
-        default=3,
+        default=2,
         min=0,
         max=100,
         step=1
