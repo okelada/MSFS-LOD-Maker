@@ -1,5 +1,38 @@
 # MSFS LOD Maker Addon
 
+## Unofficial fork of Devinci's MSFS LOD Maker Addon
+I've adapted Devinci's code to my workflow
+
+- **Selection has changed**
+  - Now there has to be a collection with name ending '_LOD0N' (N being 0,1,2,3) selected in the outliner (highlighted row)
+    or being the active layer (highlighted collection icon), alternatively a child ID will select their higher level parent lod collection,
+    as long as both their names end with '_LOD0N'. 
+  - The selected lod0 collection will be shown in the 'Generate Lods' button's caption.
+  - Note that the requirement that the base lod0 collection must be suffixed '_LOD00' stands.
+- **Panels** 
+  - Generation parameters are now published almost exhaustively.
+  - There is a results view with the generated vertices and polygons totals.
+  - lod level collections exclusion can be managed from the results view.
+  - Cleanup button has been added, this will remove everything generated.
+- **Generation** 
+  - Initial Duplication of lod1-3 collections is now based in a deep copy process similar to manual duplication in the outliner.This removes some limitations regarding nesting and parenting.
+  - Exporting Asobo gizmos (collision boxes) and lights is supported.
+    (note that Asobo gizmos must be parented to a mesh object in order to make it to the gltf, due to a limitation of the exporter at least with my setup)
+  - Minsizes can be calculated as per SDK published curves
+  - <span style="color:red">**Warning:**</span> your lod0 children will be renamed (appended '_LOD00'). This enables exporting in both 'Collections' an 'Objects' mode
+- **Decimation**
+  - There are two decimation passes available, shrinkwrap being possible only in the first one. 
+  - Both decimation methods and parameters are now adjustable per lod.
+  - The problem with shrinkwrap results having too dark vertex colors has been partially fixed, so some brightening capabilities have been removed.
+
+ Tested with Blender 4.2 and MSFS 2024 SDK 1.5.7<br>
+ Contains code taken from blender.stackexchange.com, stackoverflow.com and blenderartists.org<br>
+ Some statements of the original README below might no longer apply.<br><br><br>
+
+
+
+
+
 ## Overview
 MSFS LOD system for collections in Blender 3.6 & above, with LOD generation and automatic MSFS LOD value calculation. It allows for easy management and generation of LODs, with features for decimation, material conversion, texture baking, and automatic optimization of LOD values for the MSFS Multi-Export addon.
 
