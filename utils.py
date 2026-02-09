@@ -47,7 +47,7 @@ def find_base_collection(strict = False):
             else:
                 break
 
-        selected_base_name = get_root_name_from_collection(selected_collection)
+        selected_base_name = get_root_name_from_ID(selected_collection)
         #print(f"Found selected LODNN collection: '{selected_collection.name}'")
         selected_collection = bpy.data.collections.get(selected_base_name + "_LOD00")
 
@@ -80,7 +80,7 @@ def lodify_name(id,lod_level):
     nn = id.name
 
     #strip auto copy suffix drom duplication
-    if re.search(r".\d{3}$",nn):
+    if re.search(r".\d{3}$",nn) and "_LOD" in nn:
         nn = nn[:-4]
 
     nn =  nn.replace('.', '_') # just in case, msfs export incompatible
@@ -130,29 +130,20 @@ def lodify_name(id,lod_level):
 
 
 
-def get_root_name_from_collection(collection):
-    """
-    Extract the base name from a LOD collection, handling potential trailing underscores.
-    Args:
-        collection: Collection with name ending in "_LODNN"
-    Returns:
-        Clean base name without trailing underscores
-    """ 
- 
-    if not collection:
+def get_root_name_from_ID(id):
+    if not id:
         return None
-        
     #nested collections might not have _LODNN ending   
-    if not re.search(r"_LOD\d{2}$",collection.name):
-        return collection.name
+    if not re.search(r"_LOD\d{2}$",id.name):
+        return id.name
     
     # Remove "_LODNN" from the end
-    base_name = collection.name[:-6]  # Remove "_LODNN"
-    
+    root_name = id.name[:-6]  # Remove "_LODNN"
     # Remove any trailing underscores to avoid double underscores in generated names
-    base_name = base_name.rstrip('_')
+    root_name = root_name.replace('.','_')
+    root_name = root_name.rstrip('_')
     
-    return base_name
+    return root_name
 
 
 def remove_lod_collection(base_name,lod_level):

@@ -211,7 +211,7 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             row.operator("lodify.cleanup", text = button_text, icon='TRASH')
             #row.active = not base_collection  is None
 
-            utils.update_stats_report_and_minsizes(context,utils.get_root_name_from_collection(base_collection))
+            utils.update_stats_report_and_minsizes(context,utils.get_root_name_from_ID(base_collection))
             utils.get_lod_values(context, base_collection)
 
             srp0 = bpy.context.window_manager.stats_report_LOD00
@@ -294,14 +294,14 @@ class LODIFY_PT_modifier_tools(bpy.types.Panel):
         
         if base_collection:
             generated = len(list(utils.get_generated_lod_list())) > 0
-        if generated:
-            # Create buttons for each LOD
-            for i, item in enumerate(utils.get_generated_lod_list()):
-                if item.ui_lod_collection:  # Only show if collection is assigned
-                    row = col.row()
-                    apply_op = row.operator("lodify.apply_lod_modifiers", text=f"Apply {item.ui_lod_collection.name} Modifiers")
-                    row.active = not base_collection  is None
-                    apply_op.lod_index = i
+            if generated:
+                # Create buttons for each LOD
+                for i, item in enumerate(utils.get_generated_lod_list()):
+                    if item.ui_lod_collection:  # Only show if collection is assigned
+                        row = col.row()
+                        apply_op = row.operator("lodify.apply_lod_modifiers", text=f"Apply {item.ui_lod_collection.name} Modifiers")
+                        row.active = not base_collection  is None
+                        apply_op.lod_index = i
 
 
 # Class registration

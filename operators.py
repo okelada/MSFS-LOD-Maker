@@ -43,35 +43,43 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
         #     print(f"  Existing group {i}: '{group.name}'")
         
         # Find or create the LOD group for this collection
-        base_root_name = utils.get_root_name_from_collection(base_collection)
+        base_root_name = utils.get_root_name_from_ID(base_collection)
         generated_lods = list(utils.get_generated_lod_list())
         children_collections_flat = base_collection.children_recursive
-     
+        children_objects_flat = base_collection.all_objects
         for group in msfs_lod_groups:
             msfs_lod_group = None 
             root_name = ''
+           
             if hasattr(group, 'name'):
                 if group.name == base_root_name:
-                    msfs_lod_group = group
+                    msfs_lod_group = group 
                     root_name = base_root_name
                 else:
                     for c in children_collections_flat:
-                        child_root_name = utils.get_root_name_from_collection(c)
+                        child_root_name = utils.get_root_name_from_ID(c)
+                        if child_root_name == group.name:
+                            msfs_lod_group = group
+                            root_name = child_root_name
+                            break 
+                    for o in children_objects_flat:
+                        child_root_name = utils.get_root_name_from_ID(o)
                         if child_root_name == group.name:
                             msfs_lod_group = group
                             root_name = child_root_name
                             break
         
             if not msfs_lod_group:
-                # Create new LOD group if it doesn't exist
-                print(f"Creating new LOD group: '{root_name}'")
-                msfs_lod_group = msfs_lod_groups.add()
-                if hasattr(msfs_lod_group, 'name'):
-                    msfs_lod_group.name = root_name
-                    print(f"Created new LOD group: '{msfs_lod_group.name}'")
-                else:
-                    print(f"Warning: LOD group object doesn't have 'name' attribute")
-                    return False
+                continue
+            #     # Create new LOD group if it doesn't exist
+            #     print(f"Creating new LOD group: '{root_name}'")
+            #     msfs_lod_group = msfs_lod_groups.add()
+            #     if hasattr(msfs_lod_group, 'name'):
+            #         msfs_lod_group.name = root_name
+            #         print(f"Created new LOD group: '{msfs_lod_group.name}'")
+            #     else:
+            #         print(f"Warning: LOD group object doesn't have 'name' attribute")
+            #         return False
             else:
                 print(f"Found matching LOD group: '{group.name}'")
             
@@ -95,10 +103,10 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
                 # Set the LOD values and verify they're set
                 i = 0
                 for lod_item in generated_lods:
-                    lod_base_collection = lod_item.ui_lod_collection
+                    #lod_base_collection = lod_item.ui_lod_collection
                     addon_lod_level = lod_item.ui_lod_level
                     value = lod_values[addon_lod_level]
-                    lod_children_collections_flat = lod_base_collection.children_recursive
+                    #lod_children_collections_flat = lod_base_collection.children_recursive
                     # for c in lod_children_collections_flat:
                     #     lod_child_root_name = utils.get_root_name_from_collection(c)
                     #     if lod_child_root_name == group.name:
@@ -189,7 +197,7 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
             self.report({'ERROR'}, "Base LOD collection (ending with _LODNN) not selected, click on a collection ending with _LODNN  in the outliner")
             return {'CANCELLED'}
 
-        base_name = utils.get_root_name_from_collection(base_collection)
+        base_name = utils.get_root_name_from_ID(base_collection)
         
         if not base_name:
             self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
@@ -231,7 +239,7 @@ class LODIFY_OT_select(bpy.types.Operator):
             self.report({'ERROR'}, "Base LOD collection (ending with _LODNN) not selected, click on a collection ending with _LODNN  in the outliner")
             return {'CANCELLED'}
 
-        base_name = utils.get_root_name_from_collection(base_collection)
+        base_name = utils.get_root_name_from_ID(base_collection)
         
         if not base_name:
             self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
@@ -294,7 +302,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             self.report({'ERROR'}, "Base LOD collection (ending with _LODNN) not selected, click on a collection ending with _LODNN  in the outliner")
             return {'CANCELLED'}
         
-        self.base_name = utils.get_root_name_from_collection(self.base_collection)
+        self.base_name = utils.get_root_name_from_ID(self.base_collection)
         
         if not self.base_name:
             self.report({'ERROR'}, f"Could not extract base name from collection '{self.base_collection.name}'")
@@ -493,9 +501,9 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         # moved above lod setting because it can reset some things in groups
         try:
             # Enable grouped by collections
-            if bpy.context.scene.multi_exporter_grouped_by_collections != True: 
-                bpy.context.scene.multi_exporter_grouped_by_collections = True 
-                print("Enabled multi_exporter_grouped_by_collections")
+            # if bpy.context.scene.multi_exporter_grouped_by_collections != True: 
+            #     bpy.context.scene.multi_exporter_grouped_by_collections = True 
+            #     print("Enabled multi_exporter_grouped_by_collections")
             
             bpy.ops.msfs2024.reload_lod_groups()
             
@@ -1124,7 +1132,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                                 return node.image
         
         # Strategy 3: Search all loaded images for ALBEDO texture matching the base name
-        base_name = utils.get_root_name_from_collection(base_collection)
+        base_name = utils.get_root_name_from_ID(base_collection)
         if base_name:
             for image in bpy.data.images:
                 if base_name.upper() in image.name.upper():
@@ -1449,7 +1457,7 @@ class LODIFY_OT_set_default_lod_values(bpy.types.Operator):
             self.report({'ERROR'}, "Base LOD collection (ending with _LODNN) not selected, click on a collection ending with _LODNN  in the outliner")
             return {'CANCELLED'}
         
-        base_name = utils.get_root_name_from_collection(base_collection)
+        base_name = utils.get_root_name_from_ID(base_collection)
         
         if not base_name:
             self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
@@ -1485,7 +1493,7 @@ class LODIFY_OT_calculate_msfs_lod_values(bpy.types.Operator):
             self.report({'ERROR'}, "Base LOD collection (ending with _LOD00) not selected, click on a collection ending with _LOD00  in the outliner")
             return {'CANCELLED'}
         
-        base_name = utils.get_root_name_from_collection(base_collection)
+        base_name = utils.get_root_name_from_ID(base_collection)
         
         if not base_name:
             self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
@@ -1533,7 +1541,7 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
              self.report({'ERROR'}, "Base LOD collection (ending with _LOD00) not selected, click on a collection ending with _LOD00  in the outliner")
              return {'CANCELLED'}
         
-        base_name = utils.get_root_name_from_collection(base_collection)
+        base_name = utils.get_root_name_from_ID(base_collection)
 
         # Check if the index is valid
         if self.lod_index >= len(utils.get_generated_lod_list()):
