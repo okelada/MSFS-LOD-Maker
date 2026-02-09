@@ -29,9 +29,8 @@ I've adapted Devinci's code to my workflow
  Contains code taken from blender.stackexchange.com, stackoverflow.com and blenderartists.org<br>
  Some statements of the original README below might no longer apply.<br><br><br>
 
-
-
-
+> original README.md follows<br>
+---
 
 ## Overview
 MSFS LOD system for collections in Blender 3.6 & above, with LOD generation and automatic MSFS LOD value calculation. It allows for easy management and generation of LODs, with features for decimation, material conversion, texture baking, and automatic optimization of LOD values for the MSFS Multi-Export addon.
