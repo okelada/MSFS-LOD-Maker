@@ -15,11 +15,12 @@ I've adapted Devinci's code to my workflow
   - lod level collections exclusion can be managed from the results view.
   - Cleanup button has been added, this will remove everything generated.
 - **Generation** 
-  - Initial Duplication of lod1-3 collections is now based in a deep copy process similar to manual duplication in the outliner.This removes some limitations regarding nesting and parenting.
+  - Initial duplication of lod1-3 collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
   - Exporting Asobo gizmos (collision boxes) and lights is supported.
     (note that Asobo gizmos must be parented to a mesh object in order to make it to the gltf, due to a limitation of the exporter at least with my setup)
   - Minsizes can be calculated as per SDK published curves
-  - <span style="color:red">**Warning:**</span> your lod0 children will be renamed (appended '_LOD00'). This enables exporting in both 'Collections' an 'Objects' mode
+  - <span style="color:red">**Warning:**</span> your lod0 children will be renamed (appended '_LOD00'). Dot characters will be transformed to '_'
+    This enables exporting in both 'Collections' and 'Objects' mode
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one. 
   - Both decimation methods and parameters are now adjustable per lod.
