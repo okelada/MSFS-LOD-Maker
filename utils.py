@@ -76,13 +76,7 @@ def lodify_name(id,lod_level):
     if type(id) is bpy.types.Collection:
         id.color_tag = f'COLOR_0{lod_level+1}'
 
-    # if bpy.context.scene.lod.lodify_children_names == False:
-    #     return    
-    # if bpy.context.scene.lod.lodify_leave_lod0_alone and lod_level == 0:
-    #     return
-
     nn = id.name
-
     #strip auto copy suffix drom duplication
     if re.search(r".\d{3}$",nn) and "_LOD" in nn:
         nn = nn[:-4]
@@ -108,10 +102,10 @@ def lodify_name(id,lod_level):
                     bpy.data.objects.remove(oldobj, do_unlink=True,do_id_user=True,do_ui_user= True)
                     break
                 else:
-                    print(f"----- obj name:{new_name} already present")
+                    print(f"----- obj name:{new_name} already present")#blender will add.001, will fix later
                     break
-    #                 new_name = stripped_name +f"_{tries:03d}_LOD{lod_level:02d}"
-    #                 tries += 1
+                    # new_name = stripped_name +f"_{tries:03d}_LOD{lod_level:02d}"
+                    # tries += 1
             else:
                 break
 
@@ -123,7 +117,7 @@ def lodify_name(id,lod_level):
                     bpy.data.collections.remove(oldcoll,do_unlink=True,do_id_user=True,do_ui_user= True)
                     break
                 else:
-                   print(f"----- obj name:{new_name} already present")
+                   print(f"----- obj name:{new_name} already present")#blender will add.001, will fix later
                    break
     #                 new_name = stripped_name +f"_{tries:03d}_LOD{lod_level:02d}"
     #                 tries += 1

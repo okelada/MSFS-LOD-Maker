@@ -4,11 +4,11 @@
 I've adapted Devinci's code to my workflow
 
 - **Selection has changed**
-  - Now there has to be a collection with name ending '_LOD0N' (N being 0,1,2,3) selected in the outliner (highlighted row)
-    or being the active layer (highlighted collection icon), alternatively a child ID will select their higher level parent lod collection,
-    as long as both their names end with '_LOD0N'. 
+  - Now there has to be a collection with name ending '\_LOD0N' (N being 0,1,2,3) selected in the outliner (highlighted row)
+    or being the active layer (highlighted collection icon), alternatively any child ID will select their higher level parent lod collection,
+    as long as both their names end with '\_LOD0N'. 
   - The selected lod0 collection will be shown in the 'Generate Lods' button's caption.
-  - Note that the requirement that the base lod0 collection must be suffixed '_LOD00' stands.
+  - Note that the requirement that the base lod0 collection must be suffixed '\_LOD00' stands.
 - **Panels** 
   - Generation parameters are now published almost exhaustively.
   - There is a results view with the generated vertices and polygons totals.
@@ -17,10 +17,9 @@ I've adapted Devinci's code to my workflow
 - **Generation** 
   - Initial duplication of lod1-3 collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
   - Exporting Asobo gizmos (collision boxes) and lights is supported.
-    (note that Asobo gizmos must be parented to a mesh object in order to make it to the gltf, due to a limitation of the exporter at least with my setup)
-  - Minsizes can be calculated as per SDK published curves
-  - <span style="color:red">**Warning:**</span> your lod0 children will be renamed (appended '_LOD00'). Dot characters will be transformed to '_'
-    This enables exporting in both 'Collections' and 'Objects' mode
+    (note that Asobo gizmos must be parented to a mesh object in order to make it to the gltf, due to a limitation of the exporter at least with my setup).
+  - Minsizes can be calculated as per SDK published curves.
+  - <span style="color:red">**Warning:**</span> ___your lod0 children will be renamed (appended '\_LOD00')____. Dot characters will be transformed to '\_'. This enables exporting in both 'Collections' or 'Objects' mode.
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one. 
   - Both decimation methods and parameters are now adjustable per lod.
@@ -30,7 +29,8 @@ I've adapted Devinci's code to my workflow
  Contains code taken from blender.stackexchange.com, stackoverflow.com and blenderartists.org<br>
  Some statements of the original README below might no longer apply.<br><br><br>
 
-> original README.md follows<br>
+<p>original README.md follows</p>
+
 ---
 
 ## Overview
