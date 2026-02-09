@@ -45,8 +45,10 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
         # Find or create the LOD group for this collection
         base_root_name = utils.get_root_name_from_ID(base_collection)
         generated_lods = list(utils.get_generated_lod_list())
+
         children_collections_flat = base_collection.children_recursive
         children_objects_flat = base_collection.all_objects
+
         for group in msfs_lod_groups:
             msfs_lod_group = None 
             root_name = ''
@@ -80,8 +82,8 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
             #     else:
             #         print(f"Warning: LOD group object doesn't have 'name' attribute")
             #         return False
-            else:
-                print(f"Found matching LOD group: '{group.name}'")
+            # else:
+            #     print(f"Found matching LOD group: '{group.name}'")
             
             # Enable the LOD group (if it has the enabled attribute)
             if hasattr(msfs_lod_group, 'enabled'):
@@ -103,21 +105,16 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
                 # Set the LOD values and verify they're set
                 i = 0
                 for lod_item in generated_lods:
-                    #lod_base_collection = lod_item.ui_lod_collection
                     addon_lod_level = lod_item.ui_lod_level
                     value = lod_values[addon_lod_level]
-                    #lod_children_collections_flat = lod_base_collection.children_recursive
-                    # for c in lod_children_collections_flat:
-                    #     lod_child_root_name = utils.get_root_name_from_collection(c)
-                    #     if lod_child_root_name == group.name:
-                    lod_base_collection_name = root_name + f"_LOD{i:02d}"
+                    #lod_base_collection_name = root_name + f"_LOD{i:02d}"
                     if value != -1.0 and i < len(msfs_lod_group.lods) and hasattr(msfs_lod_group.lods[i], 'lod_value'):
-                        assigned_collection_name = getattr(msfs_lod_group.lods[i], 'name', '')
-                        if assigned_collection_name != lod_base_collection_name:
-                            msfs_lod_group.lods[i].name = lod_base_collection_name
-                        assigned_collection_file_name = getattr(msfs_lod_group.lods[i], 'file_name', '')
-                        if assigned_collection_file_name != lod_base_collection_name:
-                            msfs_lod_group.lods[i].file_name = lod_base_collection_name
+                        #assigned_collection_name = getattr(msfs_lod_group.lods[i], 'name', '')
+                        # if assigned_collection_name != lod_base_collection_name:
+                        #     msfs_lod_group.lods[i].name = lod_base_collection_name
+                        # assigned_collection_file_name = getattr(msfs_lod_group.lods[i], 'file_name', '')
+                        # if assigned_collection_file_name != lod_base_collection_name:
+                        #     msfs_lod_group.lods[i].file_name = lod_base_collection_name
                         msfs_lod_group.lods[i].lod_value = value
                         new_value = getattr(msfs_lod_group.lods[i], 'lod_value', 0.0)
                         
@@ -883,16 +880,19 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 angle = scn.lod.lod1_decimate_planar_angle
                 ratio = scn.lod.lod1_decimate_collapse_ratio
                 iterations = scn.lod.lod1_decimate_unsubdiv_iterations
+                gamma_corr = scn.lod.lod1_gamma_corr
             case 2:
                 generation_method = scn.lod.lod2_pass1_method if pass_number == 1 else scn.lod.lod2_pass2_method
                 angle = scn.lod.lod2_decimate_planar_angle
                 ratio = scn.lod.lod2_decimate_collapse_ratio
                 iterations = scn.lod.lod2_decimate_unsubdiv_iterations
+                gamma_corr = scn.lod.lod2_gamma_corr
             case 3:
                 generation_method = scn.lod.lod3_pass1_method if pass_number == 1 else scn.lod.lod3_pass2_method
                 angle = scn.lod.lod3_decimate_planar_angle
                 ratio = scn.lod.lod3_decimate_collapse_ratio
                 iterations = scn.lod.lod3_decimate_unsubdiv_iterations
+                gamma_corr = scn.lod.lod3_gamma_corr
 
         vertex_color_mode = scn.lod.vertex_color_mode
         
@@ -907,7 +907,11 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         elif generation_method == 'UNSUBDIVIDE':
             self.add_decimate_unsubdivide(obj, lod_level, iterations)
         elif generation_method.startswith('SHRINKWRAP'):
-            proxy = self.add_shrinkwrap_method(obj, lod_level, scn, context, vertex_color_mode,generation_method)
+            proxy = self.add_shrinkwrap_method(obj, lod_level, scn, context, vertex_color_mode,gamma_corr,generation_method,False)
+            shrinkwrapped_proxies[obj] = proxy
+            return proxy
+        elif generation_method == ('JUST CUBES'):
+            proxy = self.add_shrinkwrap_method(obj, lod_level, scn, context, vertex_color_mode,gamma_corr,generation_method,True)
             shrinkwrapped_proxies[obj] = proxy
             return proxy
         return obj
@@ -941,7 +945,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         print(f"    Added unsubdivide decimate modifier for LOD{lod_level:02d}")
     
 
-    def add_shrinkwrap_method(self, original_obj, lod_level, scn, context, vertex_color_mode,generation_method):
+    def add_shrinkwrap_method(self, original_obj, lod_level, scn, context, vertex_color_mode,gamma_corr,generation_method,just_cubes):
         """Apply shrinkwrap method to create a proxy object with individual cube for each mesh."""
 
         # Count vertices in the original mesh to determine subdivision level
@@ -988,74 +992,76 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         bpy.context.view_layer.objects.active = proxy
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
-        #after we are done transforming, solve hierarchy
+        #after we are done transforming, transfer hierarchy to proxy
         for c in original_obj.children:
             bpy.context.evaluated_depsgraph_get().update() #because proxy is not there yet
             utils.reparent_child(c,proxy)
         
-        # Enter edit mode, delete bottom face, and apply subdivisions
-        bpy.ops.object.mode_set(mode='EDIT')
-        
-        # Delete the bottom face of the cube (typically not visible and improves performance)
-        bpy.ops.mesh.select_all(action='DESELECT')
+        if not just_cubes:
+            # Enter edit mode, delete bottom face, and apply subdivisions
+            bpy.ops.object.mode_set(mode='EDIT')
+            
+            # Delete the bottom face of the cube (typically not visible and improves performance)
+            bpy.ops.mesh.select_all(action='DESELECT')
 
-        if not scn.lod.shrinkwarp_bottom_face:
-            # Select the bottom face (face with lowest Z coordinate)
-            bm = bmesh.from_edit_mesh(proxy.data)
-            bm.faces.ensure_lookup_table()
+            if not scn.lod.shrinkwarp_bottom_face:
+                # Select the bottom face (face with lowest Z coordinate)
+                bm = bmesh.from_edit_mesh(proxy.data)
+                bm.faces.ensure_lookup_table()
+                
+                # Find the bottom face (the one with the lowest average Z coordinate)
+                bottom_face = None
+                min_z = float('inf')
+                for face in bm.faces:
+                    avg_z = sum(vert.co.z for vert in face.verts) / len(face.verts)
+                    if avg_z < min_z:
+                        min_z = avg_z
+                        bottom_face = face
+                
+                if bottom_face:
+                    bottom_face.select = True
+                    bpy.ops.mesh.delete(type='FACE')
+                    print(f"    Deleted bottom face of cube proxy for optimization")
             
-            # Find the bottom face (the one with the lowest average Z coordinate)
-            bottom_face = None
-            min_z = float('inf')
-            for face in bm.faces:
-                avg_z = sum(vert.co.z for vert in face.verts) / len(face.verts)
-                if avg_z < min_z:
-                    min_z = avg_z
-                    bottom_face = face
+            # Apply adaptive subdivisions for optimal detail level
+            bpy.ops.mesh.select_all(action='SELECT')
+            for i in range(subdivisions):
+                bpy.ops.mesh.subdivide(number_cuts=1, smoothness=0.0)
             
-            if bottom_face:
-                bottom_face.select = True
-                bpy.ops.mesh.delete(type='FACE')
-                print(f"    Deleted bottom face of cube proxy for optimization")
-        
-        # Apply adaptive subdivisions for optimal detail level
-        bpy.ops.mesh.select_all(action='SELECT')
-        for i in range(subdivisions):
-            bpy.ops.mesh.subdivide(number_cuts=1, smoothness=0.0)
-        
-        bpy.ops.object.mode_set(mode='OBJECT')
-        print(f"    Applied {subdivisions} subdivision levels to cube proxy")
-        
-        # Add shrinkwrap modifier using appropriate target
-        shrinkwrap = proxy.modifiers.new(name="LOD_Shrinkwrap", type='SHRINKWRAP')
-        shrinkwrap.target = original_obj
-        shrinkwrap.wrap_method = 'NEAREST_SURFACEPOINT'
-        shrinkwrap.use_project_z = False
-        shrinkwrap.use_negative_direction = False
-        shrinkwrap.use_positive_direction = False
-        
-        #bpy.context.collection.objects.unlink(proxy) #unlink it from wherever it was
-        
-        print(f"    Added shrinkwrap modifier targeting '{original_obj.name}'")# (not applied - user can adjust and apply manually)")
+            bpy.ops.object.mode_set(mode='OBJECT')
+            print(f"    Applied {subdivisions} subdivision levels to cube proxy")
+            
+            # Add shrinkwrap modifier using appropriate target
+            shrinkwrap = proxy.modifiers.new(name="LOD_Shrinkwrap", type='SHRINKWRAP')
+            shrinkwrap.target = original_obj
+            shrinkwrap.wrap_method = 'NEAREST_SURFACEPOINT'
+            shrinkwrap.use_project_z = False
+            shrinkwrap.use_negative_direction = False
+            shrinkwrap.use_positive_direction = False
+            
+            #bpy.context.collection.objects.unlink(proxy) #unlink it from wherever it was
+            
+            print(f"    Added shrinkwrap modifier targeting '{original_obj.name}'")# (not applied - user can adjust and apply manually)")
         
         # Handle vertex colors for shrinkwrap objects
-        if vertex_color_mode == 'AUTO' and lod_level == 3:
+        if vertex_color_mode == 'AUTO' :#and lod_level == 3:
             # Bake LOD00 albedo to vertex colors for LOD03
             print(f"    Baking LOD00 albedo to vertex colors for LOD03 cube proxy")
-            self.bake_lod00_albedo_to_vertex_colors(proxy,scn.lod.lod3_gamma_corr)
+            self.bake_lod00_albedo_to_vertex_colors(proxy,gamma_corr)
         else:
             # For other vertex color modes, apply vertex colors to the proxy
             if vertex_color_mode != 'AUTO':
-                self.apply_vertex_colors_by_mode(proxy, lod_level,scn.lod.lod3_gamma_corr,vertex_color_mode)     
+                self.apply_vertex_colors_by_mode(proxy, lod_level,gamma_corr,vertex_color_mode)     
         
-        # Add followup Decimate modifier
-        match generation_method:
-            case 'SHRINKWRAP + PLANAR':
-                self.add_decimate_dissolve(proxy, lod_level, scn.lod.lod3_decimate_planar_angle,_name = "LOD_Shrinkwrap_dissolve")
-            case 'SHRINKWRAP + COLLAPSE':
-                self.add_decimate_collapse(proxy, lod_level, scn.lod.lod3_decimate_collapse_ratio,_name = "LOD_Shrinkwrap_collapse")
-            case 'SHRINKWRAP + UNSUBDIVIDE':
-                self.add_decimate_unsubdivide(proxy, lod_level, scn.lod.lod3_decimate_unsubdiv_iterations,_name = "LOD_Shrinkwrap_unsubdivide")
+        if not just_cubes:
+            # Add followup Decimate modifier
+            match generation_method:
+                case 'SHRINKWRAP + PLANAR':
+                    self.add_decimate_dissolve(proxy, lod_level, scn.lod.lod3_decimate_planar_angle,_name = "LOD_Shrinkwrap_dissolve")
+                case 'SHRINKWRAP + COLLAPSE':
+                    self.add_decimate_collapse(proxy, lod_level, scn.lod.lod3_decimate_collapse_ratio,_name = "LOD_Shrinkwrap_collapse")
+                case 'SHRINKWRAP + UNSUBDIVIDE':
+                    self.add_decimate_unsubdivide(proxy, lod_level, scn.lod.lod3_decimate_unsubdiv_iterations,_name = "LOD_Shrinkwrap_unsubdivide")
 
 
         
@@ -1084,13 +1090,13 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         
         # Find the corresponding LOD00 object name
         # Remove LOD suffix from target object name to find the base name
-        target_base_name = re.match(r"([^\.]+)(\.\d{3})?.*",target_obj.name).group(1)
+        target_base_name = re.match(r"([^\.\_]+)(\.\d{3})?.*",target_obj.name).group(1)
         
         # Look for the corresponding LOD00 object - WEAK
         lod00_obj = None
         for obj in base_collection.all_objects:
             if obj.type == 'MESH' and not obj.name.endswith('_PROXY'):#to avoid proxies
-                obj_base_name = re.match(r"([^\.]+)(\.\d{3})?.*",obj.name).group(1)
+                obj_base_name = re.match(r"([^\.\_]+)(\.\d{3})?.*",obj.name).group(1)
                 if obj_base_name == target_base_name and len(obj.material_slots) > 0: 
                     lod00_obj = obj
                     break

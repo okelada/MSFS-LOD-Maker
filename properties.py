@@ -101,6 +101,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + UNSUBDIVIDE', "Shrinkwrap + Unsubdivide", "Use shrinkwrap method followed by unsubdivide for this LOD"),
             ('SHRINKWRAP + PLANAR', "Shrinkwrap + Planar", "Use shrinkwrap method followed by planar for this LOD"),
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
+            ('JUST CUBES', "Just cubes", "Only enclosing cubes for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
         default='PLANAR'
@@ -189,6 +190,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + UNSUBDIVIDE', "Shrinkwrap + Unsubdivide", "Use shrinkwrap method followed by unsubdivide for this LOD"),
             ('SHRINKWRAP + PLANAR', "Shrinkwrap + Planar", "Use shrinkwrap method followed by planar for this LOD"),
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
+            ('JUST CUBES', "Just cubes", "Only enclosing cubes for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
         default='PLANAR'
@@ -277,6 +279,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + UNSUBDIVIDE', "Shrinkwrap + Unsubdivide", "Use shrinkwrap method followed by unsubdivide for this LOD"),
             ('SHRINKWRAP + PLANAR', "Shrinkwrap + Planar", "Use shrinkwrap method followed by planar for this LOD"),
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
+            ('JUST CUBES', "Just cubes", "Only enclosing cubes for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
         default='SHRINKWRAP + UNSUBDIVIDE'

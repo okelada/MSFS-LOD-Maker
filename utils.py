@@ -30,6 +30,10 @@ def find_base_collection(strict = False):
             elif type(bpy.context.selected_ids[0]) == bpy.types.Object:
                 selected_collection =  bpy.context.selected_ids[0].users_collection[0]
 
+    if not selected_collection:
+        if bpy.context.active_object:
+            selected_collection = bpy.context.active_object.users_collection[0]
+
     if not selected_collection: #try with the active one
         selected_collection = bpy.context.view_layer.active_layer_collection.collection
 
