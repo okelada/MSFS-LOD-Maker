@@ -25,18 +25,20 @@ I've adapted Devinci's code to my workflow
     - '\_NNN\_' can be inserted in some objects' names if the lodified name already exists somewhere else in the blendfile.<br>
     
     This should enable the multi-exporter to work in both 'Collections' or 'Objects' mode.<br>
-  ___Note that even if this addon supports nested structures, the multi-exporter can have a hard time to interpret them.___
+  ___Note that even if this addon supports nested structures, the multi-exporter can have a hard time to group them properly.___
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one. 
   - Both decimation methods and parameters are now adjustable per lod.
   - The problem with shrinkwrap results having too dark vertex colors has been partially fixed, so some brightening capabilities have been removed.
   - A "just cubes" nuclear option method has been added for testing purposes.
 
+<p>
+<br>
  Tested with Blender 4.2 and MSFS 2024 SDK 1.5.7<br>
  Contains code taken from blender.stackexchange.com, stackoverflow.com and blenderartists.org<br>
  Some statements of the original README below might no longer apply.<br><br><br>
 
-<p>original README.md follows</p>
+original README.md follows</p>
 
 ---
 
