@@ -9,7 +9,7 @@
 # - Automatic LOD value calculation for MSFS Multi-Export addon
 
 import bpy
-from bpy.props import IntProperty,PointerProperty,CollectionProperty,FloatProperty
+from bpy.props import IntProperty,FloatProperty
 import re
 import bmesh
 from mathutils import Vector
@@ -51,24 +51,24 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
 
         for group in msfs_lod_groups:
             msfs_lod_group = None 
-            root_name = ''
+            #root_name = ''
            
             if hasattr(group, 'name'):
                 if group.name == base_root_name:
                     msfs_lod_group = group 
-                    root_name = base_root_name
+                    #root_name = base_root_name
                 else:
                     for c in children_collections_flat:
                         child_root_name = utils.get_root_name_from_ID(c)
                         if child_root_name == group.name:
                             msfs_lod_group = group
-                            root_name = child_root_name
+                            #root_name = child_root_name
                             break 
                     for o in children_objects_flat:
                         child_root_name = utils.get_root_name_from_ID(o)
                         if child_root_name == group.name:
                             msfs_lod_group = group
-                            root_name = child_root_name
+                            #root_name = child_root_name
                             break
         
             if not msfs_lod_group:
@@ -91,7 +91,7 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
                 print(f"Enabled LOD group: '{msfs_lod_group.name}'")
             else:
                 print(f"Warning: LOD group doesn't have 'enabled' attribute - MSFS Multi-Export version mismatch")
-            
+                return False
             # Ensure we have 4 LOD entries (if lods attribute exists)
             if hasattr(msfs_lod_group, 'lods'):
                 #current_lod_count = len(msfs_lod_group.lods)
@@ -222,9 +222,9 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
 
 class LODIFY_OT_select(bpy.types.Operator):
     bl_idname = "lodify.select"
-    bl_label = "Select a generated lod"
+    bl_label = "View a generated lod alone"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Exclude other lod levels"
+    bl_description = "Exclude other lod levels from view"
     lod_level: IntProperty(default=0)
 
     def execute(self, context):
@@ -482,6 +482,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         except:
             pass  # Fallback for older Blender versions
         
+        utils.reform_object_names()
         utils.update_stats_report_and_minsizes(context,self.base_name)
 
         # Use optimal LOD values based on object size and MSFS recommendations        
@@ -1507,6 +1508,7 @@ class LODIFY_OT_calculate_msfs_lod_values(bpy.types.Operator):
         
         print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
+        #utils.reform_all_object_names()#test only
         # Use optimal LOD values based on object size and MSFS recommendations
         object_size = utils.calculate_object_bounds(base_collection)
         optimal_lod_values = utils.get_lod_values(context, base_collection)

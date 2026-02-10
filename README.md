@@ -1,6 +1,6 @@
 # MSFS LOD Maker Addon
 
-## Unofficial fork of Devinci's MSFS LOD Maker Addon
+## Unofficial fork of Devinci's great MSFS LOD Maker Addon
 I've adapted Devinci's code to my workflow
 
 - **Selection has changed**
@@ -12,18 +12,25 @@ I've adapted Devinci's code to my workflow
 - **Panels** 
   - Generation parameters are now published almost exhaustively.
   - There is a results view with the generated vertices and polygons totals.
-  - lod level collections exclusion can be managed from the results view.
+  - Lod level collections exclusion from view can be managed from the results view.
   - Cleanup button has been added, this will remove everything generated.
 - **Generation** 
   - Initial duplication of lod1-3 collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
-  - Exporting Asobo gizmos (collision boxes) and lights is supported.
-    (note that Asobo gizmos must be parented to a mesh object in order to make it to the gltf, due to a limitation of the exporter at least with my setup).
+  - Exporting Asobo gizmos (collision boxes) and lights is supported.<br>
+    ___Note that Asobo gizmos must be parented to a mesh object in order for them to make it to the gltf, due to a limitation of the multi-exporter (at least with my setup).___
   - Minsizes can be calculated as per SDK published curves.
-  - <span style="color:red">**Warning:**</span> ___your lod0 children will be renamed (appended '\_LOD00')____. Dot characters will be transformed to '\_'. This enables exporting in both 'Collections' or 'Objects' mode.
+  - <span style="color:red">**Warning:** </span>___your lod0 children will be renamed___<br>
+    - Their names will be appended '\_LOD00'.<br>
+    - Dot characters will be transformed to underscores.<br>
+    - '\_NNN\_' can be inserted in some objects' names if the lodified name already exists somewhere else in the blendfile.<br>
+    
+    This should enable the multi-exporter to work in both 'Collections' or 'Objects' mode.<br>
+  ___Note that even if this addon supports nested structures, the multi-exporter can have a hard time to interpret them.___
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one. 
   - Both decimation methods and parameters are now adjustable per lod.
   - The problem with shrinkwrap results having too dark vertex colors has been partially fixed, so some brightening capabilities have been removed.
+  - A "just cubes" nuclear option method has been added for testing purposes.
 
  Tested with Blender 4.2 and MSFS 2024 SDK 1.5.7<br>
  Contains code taken from blender.stackexchange.com, stackoverflow.com and blenderartists.org<br>

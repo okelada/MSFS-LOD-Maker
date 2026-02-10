@@ -66,46 +66,123 @@ def find_base_collection(strict = False):
     return None,None
 
 
+
+
+
+def reform_object_names():
+    #eliminate .001 cases after duplication / process
+    #it can't be just pruned off as the name exists somewhere else
+    #shouldn't affect collections
+    generated_lods = list(get_generated_lod_list())
+    children_objects_flat_list = []
+    lod_level_list = []
+    
+    for lod in generated_lods: 
+        lod_collection = lod.ui_lod_collection
+        lod_level = lod.ui_lod_level
+        lod_level_list.append(lod_level)
+
+        children_objects_flat = list(lod_collection.all_objects)
+        children_objects_flat.sort(key=lambda obj: obj.name)
+        children_objects_flat_list.append(children_objects_flat)
+
+    num_lod_levels = len(lod_level_list)
+    lod0_children_objects_flat = children_objects_flat_list[0]
+    num_children_objects = len(lod0_children_objects_flat)
+
+    troubled_name_collections = {}
+    for i in range(num_children_objects):     
+        o_names = []
+        needs_reform = False
+        for l in range(num_lod_levels):
+            o = children_objects_flat_list[l][i]
+            o_names.append(o.name)
+            if not o.name.endswith(f"_LOD{l:02d}"):
+                needs_reform = True  
+                #print(f"obj l{l}:{i} {o.name} needs reform")
+        if needs_reform:
+            troubled_name_collections[(i,l)] = o_names
+    
+    for k in troubled_name_collections:
+        names = troubled_name_collections[k]
+        i,l = k
+        root_name = get_root_name(names[0])
+        tries = 0
+        while tries < 99:     
+            name_is_free = True
+            tries += 1
+            for ll in range(4):
+                #n = get_root_name(nn)
+                new_name = root_name +f"_{tries:03d}_LOD{ll:02d}"
+                if new_name in bpy.data.objects or new_name in bpy.data.collections:
+                    name_is_free = False
+                    break
+            if name_is_free:
+                for ll in range(4):
+                    new_name = root_name + f"_{tries:03d}_LOD{ll:02d}"
+                    children_objects_flat_list[ll][i].name = new_name
+                break
+
+                   
 def is_same_name_root(name0,name1):
         root0 = name0.split('.')[0]
         root1 = name1.split('.')[0]
         return root0 == root1
+
+def get_root_name(name):
+    #strip auto copy suffix from duplication
+    nn = name
+    if re.search(r".\d{3}$",nn) and "_LOD" in nn: #if duplicated suffix, remove it
+        nn = nn[:-4]
+
+    nn =  nn.replace('.', '_') # just in case, msfs export incompatible
+    nn = nn.rstrip('_')
+
+    #check if already lodified
+    lodpos = re.search(r"_LOD\d{2}",nn)
+    if lodpos:
+        # if nn.endswith(f"_LOD{lod_level:02d}"):
+        #     #id.name = nn #reuse as is
+        #     return nn
+        nn = nn[0:lodpos.start()] #strip lod suffix for now
+
+    #stripped_name = nn #no suffixes at the end
+    return nn
+
+def get_root_name_from_ID(id):
+    if not id:
+        return None
+    # #nested collections might not have _LODNN ending   
+    # if not re.search(r"_LOD\d{2}$",id.name):
+    #     return id.name
+    
+    # # Remove "_LODNN" from the end
+    # root_name = id.name[:-6]  # Remove "_LODNN"
+    # # Remove any trailing underscores to avoid double underscores in generated names
+    # root_name = root_name.replace('.','_')
+    # root_name = root_name.rstrip('_')
+    
+    return get_root_name(id.name)
+
 
 
 def lodify_name(id,lod_level):
     if type(id) is bpy.types.Collection:
         id.color_tag = f'COLOR_0{lod_level+1}'
 
-    nn = id.name
-    #strip auto copy suffix drom duplication
-    if re.search(r".\d{3}$",nn) and "_LOD" in nn:
-        nn = nn[:-4]
-
-    nn =  nn.replace('.', '_') # just in case, msfs export incompatible
-    #check if already lodified
-    lodpos = re.search(r"_LOD\d{2}",nn)
-    if lodpos:
-        if nn.endswith(f"_LOD{lod_level:02d}"):
-            id.name = nn #reuse as is
-            return
-        nn = id.name[0:lodpos.start()] #strip lod suffix for now
-
-    stripped_name = nn #no suffixes at the end
+    stripped_name = get_root_name(id.name)
     new_name = stripped_name + f"_LOD{lod_level:02d}" #new lod suffix
-    tries = 1
 
     if type(id) is bpy.types.Object:
         while True:
             if new_name in bpy.data.objects:
                 oldobj = bpy.data.objects[new_name]
                 if oldobj.users == 0:
-                    bpy.data.objects.remove(oldobj, do_unlink=True,do_id_user=True,do_ui_user= True)
+                    bpy.data.objects.remove(oldobj, do_unlink=True,do_id_user=True,do_ui_user= True)#try to set the name free
                     break
                 else:
-                    print(f"----- obj name:{new_name} already present")#blender will add.001, will fix later
+                    print(f"----- obj name:{new_name} already present somewhere")#blender will add.001,we will fix later
                     break
-                    # new_name = stripped_name +f"_{tries:03d}_LOD{lod_level:02d}"
-                    # tries += 1
             else:
                 break
 
@@ -114,13 +191,11 @@ def lodify_name(id,lod_level):
             if new_name in bpy.data.collections:
                 oldcoll = bpy.data.collections[new_name]
                 if oldcoll.users == 0:
-                    bpy.data.collections.remove(oldcoll,do_unlink=True,do_id_user=True,do_ui_user= True)
+                    bpy.data.collections.remove(oldcoll,do_unlink=True,do_id_user=True,do_ui_user= True)#try to set the name free
                     break
                 else:
-                   print(f"----- obj name:{new_name} already present")#blender will add.001, will fix later
+                   print(f"----- obj name:{new_name} already present somewhere")#blender will add.001,we will fix later
                    break
-    #                 new_name = stripped_name +f"_{tries:03d}_LOD{lod_level:02d}"
-    #                 tries += 1
             else:
                 break
         #id.color_tag = f'COLOR_0{lod_level+1}'
@@ -128,20 +203,7 @@ def lodify_name(id,lod_level):
 
 
 
-def get_root_name_from_ID(id):
-    if not id:
-        return None
-    #nested collections might not have _LODNN ending   
-    if not re.search(r"_LOD\d{2}$",id.name):
-        return id.name
-    
-    # Remove "_LODNN" from the end
-    root_name = id.name[:-6]  # Remove "_LODNN"
-    # Remove any trailing underscores to avoid double underscores in generated names
-    root_name = root_name.replace('.','_')
-    root_name = root_name.rstrip('_')
-    
-    return root_name
+
 
 
 def remove_lod_collection(base_name,lod_level):
@@ -217,26 +279,11 @@ def tree_copy(ob, root_parent, collection):
     recurse(ob, root_parent,collection)
 
 
-# def deep_copy_object(obj, to_coll, linked, dupe_lut):
-#     new_obj = obj.copy()#incorrect
-#     new_obj.parent = obj.parent
-#     new_obj.matrix_world = obj.matrix_world.copy()
-#     if not linked and obj.data:
-#         new_obj.data = obj.data.copy()
-#     if not linked and obj.animation_data:
-#         new_obj.animation_data.action = obj.animation_data.action.copy()
-#     to_coll.objects.link(new_obj)
-#     dupe_lut[obj] = new_obj
-
-
 def duplicate_collection(new_collection, parent_collection,source_collection,linked=False):
     dupe_lut = defaultdict(lambda : None)
     def _copy_coll(new_coll,parent_coll,source_coll, linked=False):
         if not new_coll:
             new_coll = bpy.data.collections.new(source_coll.name)
-        
-        # for obj in source_coll.objects:
-        #    deep_copy_object(obj, new_coll, linked, dupe_lut)
 
         root_objs = [o for o in source_coll.objects if o.parent == None]
         for obj in root_objs:
@@ -415,8 +462,7 @@ def calculate_optimal_lod_values(object_size_meters):
 
 
 
-def calculate_optimal_lod_values_2024():
-
+def calculate_optimal_lod_values_SDK_Curves():
     minsize0 = -1.0
     minsize1 = -1.0
     minsize2 = -1.0
@@ -469,7 +515,7 @@ def get_lod_values(context, base_collection):
         object_size = calculate_object_bounds(base_collection)
 
         if  bpy.context.scene.lod.get("minsizes_method", 1) == 1:
-            optimal_lod_values = calculate_optimal_lod_values_2024()
+            optimal_lod_values = calculate_optimal_lod_values_SDK_Curves()
         else:
             optimal_lod_values = calculate_optimal_lod_values(object_size)            
     else:
