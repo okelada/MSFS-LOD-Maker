@@ -209,8 +209,8 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
             utils.remove_lod_collection(base_name,i)
            
         lod00_layer_collection = utils.find_layer_collection(base_collection,bpy.context.view_layer.layer_collection)
+        lod00_layer_collection.exclude = False
         bpy.context.view_layer.active_layer_collection = lod00_layer_collection
-        #bpy.ops.outliner.item_activate(deselect_all=True)
         
         
         utils.update_stats_report_and_minsizes(context,base_name)
@@ -487,7 +487,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
         # Use optimal LOD values based on object size and MSFS recommendations        
         
-        object_size = utils.calculate_object_bounds(self.base_collection)
+        object_size = utils.calculate_ID_bounds(self.base_collection)
         optimal_lod_values = utils.get_lod_values(context, self.base_collection)
 
         #print(f"Object size: {object_size:.2f}m")
@@ -992,10 +992,14 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         # Apply the scale transform to make it permanent
         bpy.context.view_layer.objects.active = proxy
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-
+        
         #after we are done transforming, transfer hierarchy to proxy
+        if  original_obj.parent:
+            utils.reparent_child(proxy,original_obj.parent)
+
         for c in original_obj.children:
             bpy.context.evaluated_depsgraph_get().update() #because proxy is not there yet
+            utils.unparent_child(c)
             utils.reparent_child(c,proxy)
         
         if not just_cubes:
@@ -1510,7 +1514,7 @@ class LODIFY_OT_calculate_msfs_lod_values(bpy.types.Operator):
         
         #utils.reform_all_object_names()#test only
         # Use optimal LOD values based on object size and MSFS recommendations
-        object_size = utils.calculate_object_bounds(base_collection)
+        object_size = utils.calculate_ID_bounds(base_collection)
         optimal_lod_values = utils.get_lod_values(context, base_collection)
         
         #print(f"Object size: {object_size:.2f}m")

@@ -146,24 +146,19 @@ def get_root_name(name):
         #     return nn
         nn = nn[0:lodpos.start()] #strip lod suffix for now
 
+    if lodpos:
+        # if nn.endswith(f"_LOD{lod_level:02d}"):
+        #     #id.name = nn #reuse as is
+        #     return nn
+        nn = nn[0:lodpos.start()] #strip lod suffix for now
+
     #stripped_name = nn #no suffixes at the end
     return nn
 
 def get_root_name_from_ID(id):
     if not id:
         return None
-    # #nested collections might not have _LODNN ending   
-    # if not re.search(r"_LOD\d{2}$",id.name):
-    #     return id.name
-    
-    # # Remove "_LODNN" from the end
-    # root_name = id.name[:-6]  # Remove "_LODNN"
-    # # Remove any trailing underscores to avoid double underscores in generated names
-    # root_name = root_name.replace('.','_')
-    # root_name = root_name.rstrip('_')
-    
     return get_root_name(id.name)
-
 
 
 def lodify_name(id,lod_level):
@@ -171,7 +166,17 @@ def lodify_name(id,lod_level):
         id.color_tag = f'COLOR_0{lod_level+1}'
 
     stripped_name = get_root_name(id.name)
-    new_name = stripped_name + f"_LOD{lod_level:02d}" #new lod suffix
+    insert_token = ''
+
+    if lod_level == 0:
+        insert_token = bpy.context.scene.lod.insert_token
+        if insert_token != '' and not stripped_name.endswith(insert_token):
+            insert_token = "_" + insert_token.replace('.', '_')
+        else:
+            insert_token = ''
+
+        
+    new_name = stripped_name + insert_token + f"_LOD{lod_level:02d}" #new lod suffix
 
     if type(id) is bpy.types.Object:
         while True:
@@ -329,27 +334,46 @@ def lookup(x, xs, ys):
     return y
 
 
-def update_stats_report_and_minsizes(context,base_name):
-    depsgraph = context.evaluated_depsgraph_get()        
+def get_ID_Totals(context,id):
+    if not id:
+        return (0,0,0)
 
+    sumvertices = 0
+    sumpolygons = 0
+    summaterials = 0
+    
+    depsgraph = context.evaluated_depsgraph_get()  
+    
+    if type(id) is bpy.types.Collection:
+        for obj in id.all_objects:
+            if obj.type == 'MESH':
+                object_eval = obj.evaluated_get(depsgraph)
+                numvertices = len(object_eval.data.vertices)
+                sumvertices += numvertices
+                numpolygons = len(object_eval.data.polygons)
+                sumpolygons += numpolygons
+                nummaterials = len(object_eval.data.materials)
+                summaterials += nummaterials
+    elif type(id) is bpy.types.Object:
+        if id.type == 'MESH':
+            object_eval = id.evaluated_get(depsgraph)
+            numvertices = len(object_eval.data.vertices)
+            sumvertices += numvertices
+            numpolygons = len(object_eval.data.polygons)
+            sumpolygons += numpolygons
+            nummaterials = len(object_eval.data.materials)
+            summaterials += nummaterials
+
+    return (sumvertices,sumpolygons,summaterials)
+
+
+
+def update_stats_report_and_minsizes(context,base_name):
     for i in range(4):
         srp = (-1.0,-1.0,-1.0)
         coll = bpy.data.collections.get(base_name + f"_LOD{i:02d}")
         if not coll is None and context.scene.user_of_id(coll):
-            sumvertices = 0
-            sumpolygons = 0
-            summaterials = 0
-            #print(coll.name)
-            for obj in coll.all_objects:
-                if obj.type == 'MESH':
-                    object_eval = obj.evaluated_get(depsgraph)
-                    numvertices = len(object_eval.data.vertices)
-                    sumvertices += numvertices
-                    numpolygons = len(object_eval.data.polygons)
-                    sumpolygons += numpolygons
-                    nummaterials = len(object_eval.data.materials)
-                    summaterials += nummaterials
-                    #print(f"{obj.name} nvert:{numvertices} npoly:{numpolygons} nmats:{nummaterials}")
+            sumvertices,sumpolygons,summaterials = get_ID_Totals(context,coll)
             srp = (sumvertices,sumpolygons,summaterials)
 
         match i:
@@ -362,22 +386,34 @@ def update_stats_report_and_minsizes(context,base_name):
             case 3:
                 bpy.context.window_manager.stats_report_LOD03 = srp
         
-def calculate_object_bounds(collection):
+
+def calculate_ID_bounds(id):
     """
     Calculate the bounding box dimensions of all objects in a collection.
     Returns the maximum dimension (length, width, or height) in meters.
     """
-    if not collection or not collection.all_objects:
+    if not id:
         return 0.0
     
     min_coords = Vector((float('inf'), float('inf'), float('inf')))
     max_coords = Vector((float('-inf'), float('-inf'), float('-inf')))
     
-    for obj in collection.all_objects:
-        if obj.type == 'MESH':
-            # Get object's bounding box in world coordinates
-            bbox_corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-            
+    if type(id) is bpy.types.Collection:
+        for obj in id.all_objects:
+            if obj.type == 'MESH':
+                # Get object's bounding box in world coordinates
+                bbox_corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+                for corner in bbox_corners:
+                    min_coords.x = min(min_coords.x, corner.x)
+                    min_coords.y = min(min_coords.y, corner.y)
+                    min_coords.z = min(min_coords.z, corner.z)
+                    max_coords.x = max(max_coords.x, corner.x)
+                    max_coords.y = max(max_coords.y, corner.y)
+                    max_coords.z = max(max_coords.z, corner.z)
+    elif type(id) is bpy.types.Object:
+        if id.type == 'MESH':
+             # Get object's bounding box in world coordinates
+            bbox_corners = [id.matrix_world @ Vector(corner) for corner in id.bound_box]
             for corner in bbox_corners:
                 min_coords.x = min(min_coords.x, corner.x)
                 min_coords.y = min(min_coords.y, corner.y)
@@ -512,7 +548,7 @@ def get_lod_values(context, base_collection):
     
     if scn.lod.use_automatic_lod_calculation:
         # Use automatic calculation based on object size
-        object_size = calculate_object_bounds(base_collection)
+        object_size = calculate_ID_bounds(base_collection)
 
         if  bpy.context.scene.lod.get("minsizes_method", 1) == 1:
             optimal_lod_values = calculate_optimal_lod_values_SDK_Curves()

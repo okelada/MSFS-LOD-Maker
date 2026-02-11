@@ -24,6 +24,12 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         description="Comma-separated LOD values (e.g., '12,3,2,1') for manual override. Only used when automatic calculation is disabled",
         default="4.0,3.0,2.0,1.0"
     )
+    
+    insert_token: StringProperty(
+        name="Insert token",
+        description="Inserted in the middle of ID names, helps the multi-exporter to recognize our objects",
+        default=""
+    )
 
     # Advanced Settings
     show_advanced_settings: BoolProperty(

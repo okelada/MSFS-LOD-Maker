@@ -133,6 +133,10 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
             row.prop(lod_props, "minsizes_method", text="MinSize calculation method")
             if scn.lod.get("minsizes_method", 1) == 1:
                 row.prop(lod_props, "lod_minsizes_quality", text="MSFS LOD curve")
+            row = col.row()
+            row.alignment = 'LEFT'
+            row.prop(lod_props, "insert_token", text="Inserted token")
+            row.label(text = "(To revert: cleanup and manually remove it from lod0 names)")
             
 
 
@@ -231,7 +235,7 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             row.active = generated
             col = row.column()
             col.alignment = 'LEFT'
-            col.operator("lodify.select",text = "All").lod_level = -1
+            col.operator("lodify.select",text = "Show all").lod_level = -1
             col.label(text = "Vertices")
             col.label(text = "Polygons")
             col.label(text = "Materials")
