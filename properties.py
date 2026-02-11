@@ -336,6 +336,13 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         unit='LENGTH'
     )
     
+    
+    triangulate_after_shrinkwarp: BoolProperty(
+        name="Triangulate after shrinkwrap",
+        description="Apply triangulate modifier after shrinkwrap", 
+        default=True
+    )
+
     auto_apply_modifiers: BoolProperty(
         name="Auto apply modifiers",
         description="Apply modifiers automatically, except shrinkwrap", 

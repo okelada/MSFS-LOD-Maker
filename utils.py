@@ -141,18 +141,11 @@ def get_root_name(name):
     #check if already lodified
     lodpos = re.search(r"_LOD\d{2}",nn)
     if lodpos:
-        # if nn.endswith(f"_LOD{lod_level:02d}"):
-        #     #id.name = nn #reuse as is
-        #     return nn
         nn = nn[0:lodpos.start()] #strip lod suffix for now
 
     if lodpos:
-        # if nn.endswith(f"_LOD{lod_level:02d}"):
-        #     #id.name = nn #reuse as is
-        #     return nn
         nn = nn[0:lodpos.start()] #strip lod suffix for now
 
-    #stripped_name = nn #no suffixes at the end
     return nn
 
 def get_root_name_from_ID(id):
@@ -245,6 +238,12 @@ def remove_lod_collection(base_name,lod_level):
             if block.users == 0:
                 bpy.data.images.remove(block,do_unlink=True,do_id_user=True,do_ui_user= True)
 
+        lod_list = get_generated_lod_list()
+        for i,lod in enumerate(lod_list):
+            if lod.ui_lod_level == lod_level:
+                lod_list.remove(i)
+                break
+        
 
 def reparent_child(child,new_parent):
     # parent_inverse_world_matrix = new_parent.matrix_world.inverted()

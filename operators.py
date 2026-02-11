@@ -73,18 +73,7 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
         
             if not msfs_lod_group:
                 continue
-            #     # Create new LOD group if it doesn't exist
-            #     print(f"Creating new LOD group: '{root_name}'")
-            #     msfs_lod_group = msfs_lod_groups.add()
-            #     if hasattr(msfs_lod_group, 'name'):
-            #         msfs_lod_group.name = root_name
-            #         print(f"Created new LOD group: '{msfs_lod_group.name}'")
-            #     else:
-            #         print(f"Warning: LOD group object doesn't have 'name' attribute")
-            #         return False
-            # else:
-            #     print(f"Found matching LOD group: '{group.name}'")
-            
+
             # Enable the LOD group (if it has the enabled attribute)
             if hasattr(msfs_lod_group, 'enabled'):
                 msfs_lod_group.enabled = True
@@ -109,22 +98,14 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
                     value = lod_values[addon_lod_level]
                     #lod_base_collection_name = root_name + f"_LOD{i:02d}"
                     if value != -1.0 and i < len(msfs_lod_group.lods) and hasattr(msfs_lod_group.lods[i], 'lod_value'):
-                        #assigned_collection_name = getattr(msfs_lod_group.lods[i], 'name', '')
-                        # if assigned_collection_name != lod_base_collection_name:
-                        #     msfs_lod_group.lods[i].name = lod_base_collection_name
-                        # assigned_collection_file_name = getattr(msfs_lod_group.lods[i], 'file_name', '')
-                        # if assigned_collection_file_name != lod_base_collection_name:
-                        #     msfs_lod_group.lods[i].file_name = lod_base_collection_name
                         msfs_lod_group.lods[i].lod_value = value
-                        new_value = getattr(msfs_lod_group.lods[i], 'lod_value', 0.0)
-                        
+                        new_value = getattr(msfs_lod_group.lods[i], 'lod_value', 0.0) 
                         # Verify the value was set correctly
                         if abs(new_value - value) > 0.001:
                             print(f"WARNING: LOD{i} value not set correctly! Expected {value}, got {new_value}")
                     else:
                         print(f"WARNING: LOD{i} entry missing or no lod_value attribute")
                     i += 1
-            
                 # Force an update of the UI
                 try:
                     bpy.context.area.tag_redraw()
@@ -187,7 +168,6 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
 
     def execute(self, context):
         scn = context.scene
-
         base_collection,parent_collection = utils.find_base_collection()
         
         if not base_collection:
@@ -202,7 +182,6 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
             
         print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
-
         utils.remove_unused_shrinkwrap_targets()
 
         for i in [1, 2, 3]:
@@ -212,9 +191,8 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
         lod00_layer_collection.exclude = False
         bpy.context.view_layer.active_layer_collection = lod00_layer_collection
         
-        
-        utils.update_stats_report_and_minsizes(context,base_name)
-        utils.get_lod_values(context, base_collection)
+        # utils.update_stats_report_and_minsizes(context,base_name)
+        # utils.get_lod_values(context, base_collection)
         #self.report({'INFO'}, f"Generated {lod_list_str} for {size_description} object ({object_size:.2f}m). Method: {method_description}. Vertex Colors: {vertex_color_mode}. MSFS LOD values: {optimal_lod_values}")
         return {'FINISHED'}
 
@@ -229,7 +207,6 @@ class LODIFY_OT_select(bpy.types.Operator):
 
     def execute(self, context):
         scn = context.scene
-
         base_collection,parent_collection = utils.find_base_collection()
         
         if not base_collection:
@@ -260,8 +237,7 @@ class LODIFY_OT_select(bpy.types.Operator):
                             active_lod_layer_collection = lod_layer_collection
                         lod_layer_collection.exclude = is_excluded
                 if active_lod_layer_collection:
-                    bpy.context.view_layer.active_layer_collection = active_lod_layer_collection
-                           
+                    bpy.context.view_layer.active_layer_collection = active_lod_layer_collection              
         else:
             for lod_collection in utils.get_generated_lod_list():
                 lod_layer_collection = utils.find_layer_collection(lod_collection.ui_lod_collection,bpy.context.view_layer.layer_collection)
@@ -275,7 +251,7 @@ class LODIFY_OT_select(bpy.types.Operator):
             if active_lod_layer_collection:
                 bpy.context.view_layer.active_layer_collection = active_lod_layer_collection
         return {'FINISHED'}
-    
+
 
 
 class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
@@ -484,27 +460,17 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         
         utils.reform_object_names()
         utils.update_stats_report_and_minsizes(context,self.base_name)
-
         # Use optimal LOD values based on object size and MSFS recommendations        
-        
         #object_size = utils.calculate_ID_bounds(self.base_collection)
         optimal_lod_values,object_size = utils.get_lod_values(context, self.base_collection)
-
         #print(f"Object size: {object_size:.2f}m")
         #print(f"Using optimal LOD values: {optimal_lod_values} (auto-set to default values)")
-
          # Final report with object size and LOD values information
         size_description = "very small" if object_size < 1.0 else "small" if object_size < 5.0 else "medium" if object_size < 20.0 else "large" if object_size < 100.0 else "very large"
         # Activate MSFS Multi-Export settings after LOD operation completion
         # moved above lod setting because it can reset some things in groups
         try:
-            # Enable grouped by collections
-            # if bpy.context.scene.multi_exporter_grouped_by_collections != True: 
-            #     bpy.context.scene.multi_exporter_grouped_by_collections = True 
-            #     print("Enabled multi_exporter_grouped_by_collections")
-            
             bpy.ops.msfs2024.reload_lod_groups()
-            
             # Enable our LOD group
             if hasattr(bpy.context.scene, 'msfs_multi_exporter_lod_groups') and len(bpy.context.scene.msfs_multi_exporter_lod_groups) > 0:
                 for group in bpy.context.scene.msfs_multi_exporter_lod_groups:
@@ -540,19 +506,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         except Exception as e:
             print(f"Could not force scene update: {str(e)}")
         
-        # Final verification of LOD values
-        # print(f"=== Final Verification ===")
-        # try:
-        #     if hasattr(bpy.context.scene, 'msfs_multi_exporter_lod_groups'):
-        #         for group in bpy.context.scene.msfs_multi_exporter_lod_groups:
-        #             if group.name == self.base_name:
-        #                 print(f"LOD Group '{group.name}' final values:")
-        #                 for i, lod in enumerate(group.lods[:4]):
-        #                     print(f"  LOD{i}: {lod.lod_value:.01f}")
-        #                 break
-        # except Exception as e:
-        #     print(f"Could not verify final LOD values: {str(e)}")
-
         # Create LOD list string for the report 
         vertex_color_mode = scn.lod.vertex_color_mode
         lod_list_str = ", ".join([f"LOD{i:02d}" for i in lods_to_generate])
@@ -707,30 +660,22 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 self.process_lod03_from_lod02(target_collection, scn, context)
         else:
             # Normal processing for LOD01 and LOD02
-            
             for obj in target_collection.objects:
                 print(f"Processing obj: {obj.name} type: {obj.type}")
                 if obj.type == 'MESH':# and not self.is_in_child_lod00(obj, None):
                     # Check if the object is too small for higher LODs
                     small_object_threshold =  scn.lod.lod1_small_object_threshold if lod_level == 1 else  scn.lod.lod2_small_object_threshold
                     gamma_corr =  scn.lod.lod1_gamma_corr if lod_level == 1 else scn.lod.lod2_gamma_corr
-                    merge_threshold = scn.lod.lod1_merge_threshold if lod_level == 1 else scn.lod.lod2_merge_threshold
-
+                    #merge_threshold = scn.lod.lod1_merge_threshold if lod_level == 1 else scn.lod.lod2_merge_threshold
                     if small_object_threshold > 0 and self.is_object_too_small(obj, small_object_threshold):
                         continue
                     # Store original materials for vertex color operations
-                    original_materials = [slot.material for slot in obj.material_slots if slot.material]
-                    
+                    #original_materials = [slot.material for slot in obj.material_slots if slot.material]
                     utils.lodify_name(obj,lod_level)
                     # Apply vertex colors based on selected mode and LOD level
                     self.apply_vertex_colors_by_mode(obj, lod_level,gamma_corr, scn.lod.vertex_color_mode)
-                    
                     #pass 1
                     final_obj = self.apply_lod_generation_method(obj, lod_level, 1, scn, context, shrinkwrapped_proxies)
-                    # Merge vertices by distance for the final object
-                    # if final_obj:
-                    #     merge_vertices_by_distance(final_obj, context,lod_level)
-                    
                     #pass 2
                     final_obj = self.apply_lod_generation_method(final_obj, lod_level, 2, scn, context, shrinkwrapped_proxies)
                     # Merge vertices by distance for the final object
@@ -759,17 +704,12 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
         shrinkwrapped_proxies = {}
         # Simple copying from LOD02 objects
-        #try:
+
         for obj in target_collection.objects:
             if obj.type == 'MESH':# and not self.is_in_child_lod00(obj, self.base_collection):
-   
                 utils.lodify_name(obj,3)
                 #pass 1
                 final_obj = self.apply_lod_generation_method(obj, 3, 1, scn, context, shrinkwrapped_proxies)
-                # Merge vertices by distance for the final object
-                # if final_obj:
-                #     merge_vertices_by_distance(final_obj, context,3)
-                
                 #pass 2
                 final_obj = self.apply_lod_generation_method(final_obj, 3, 2, scn, context, shrinkwrapped_proxies)
                 # Merge vertices by distance for the final object
@@ -777,9 +717,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     merge_vertices_by_distance(final_obj, context,3)
             else:
                 utils.lodify_name(obj,3)
-        # except Exception as e:
-        #     print(f"    Error during LOD03 processing: {str(e)}")
-        #     print(f"    Falling back to gray vertex colors for LOD03")
+
         for original_obj in shrinkwrapped_proxies:
             if shrinkwrapped_proxies[original_obj]:
                 self.swap_original_by_proxy(shrinkwrapped_proxies[original_obj],original_obj,target_collection)
@@ -792,7 +730,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
     def process_lod03_from_lod00(self, target_collection, scn, context):
         """Simple LOD03 processing."""      
         print(f"Processing collection 3 from 20 : {target_collection} ")
-        #try:
+
         shrinkwrapped_proxies = {}
         for obj in target_collection.objects:
             if obj.type == 'MESH':# and not self.is_in_child_lod00(obj, self.base_collection):
@@ -800,19 +738,12 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     continue
                 # Store original materials for vertex color operations
                 #original_materials = [slot.material for slot in obj.material_slots if slot.material]
-                
                 utils.lodify_name(obj,3)
-                
                 # Apply vertex colors based on selected mode and LOD level
                 self.apply_vertex_colors_by_mode(obj, 3,scn.lod.lod3_gamma_corr, 'BAKE_ALL')#force bake 03 from 00
                 obj.data.materials.clear()
-
                 #pass 1
                 final_obj = self.apply_lod_generation_method(obj, 3, 1, scn, context, shrinkwrapped_proxies)
-                # Merge vertices by distance for the final object
-                # if final_obj:
-                #     merge_vertices_by_distance(final_obj, context,3)
-                
                 #pass 2
                 final_obj = self.apply_lod_generation_method(final_obj, 3, 2, scn, context, shrinkwrapped_proxies)
                 # Merge vertices by distance for the final object
@@ -822,9 +753,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             else:
                 utils.lodify_name(obj,3)
 
-        # except Exception as e:
-        #     print(f"    Error during LOD03 processing: {str(e)}")
-        #     print(f"    Falling back to gray vertex colors for LOD03")
         for original_obj in shrinkwrapped_proxies:
             if shrinkwrapped_proxies[original_obj]:
                 self.swap_original_by_proxy(shrinkwrapped_proxies[original_obj],original_obj,target_collection)
@@ -869,7 +797,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             if lod_level == 2 or lod_level == 3:  # LOD02 and LOD03 - gray colors
                 self.create_gray_vertex_colors(obj)
                 print(f"    Applied gray vertex colors (TRANSFER_ALL mode)")
-    
 
 
     def apply_lod_generation_method(self, obj, lod_level,pass_number, scn, context,shrinkwrapped_proxies):
@@ -1053,7 +980,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             shrinkwrap.use_positive_direction = False
             
             #bpy.context.collection.objects.unlink(proxy) #unlink it from wherever it was
-            
             print(f"    Added shrinkwrap modifier targeting '{original_obj.name}'")# (not applied - user can adjust and apply manually)")
         
         # Handle vertex colors for shrinkwrap objects
@@ -1066,8 +992,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             if vertex_color_mode != 'AUTO':
                 self.apply_vertex_colors_by_mode(proxy, lod_level,gamma_corr,vertex_color_mode)     
         
-        
-        
         if not just_cubes:
             # Add followup Decimate modifier
             match generation_method:
@@ -1078,7 +1002,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 case 'SHRINKWRAP + UNSUBDIVIDE':
                     self.add_decimate_unsubdivide(proxy, lod_level, scn.lod.lod3_decimate_unsubdiv_iterations,_name = "LOD_unsubdivide")
 
-        self.add_triangulate_faces(proxy, lod_level)
+        if scn.lod.triangulate_after_shrinkwarp:
+            self.add_triangulate_faces(proxy, lod_level)
        
         #print(f"    Successfully created individual LOD{lod_level:02d} cube proxy '{proxy.name}' for mesh '{original_obj.name}'")
         
@@ -1590,8 +1515,8 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
         if applied_count == 0 and error_count == 0:
             self.report({'INFO'}, f"No objects with modifiers found in '{collection.name}'")
         
-        utils.update_stats_report_and_minsizes(context,base_name)
-        utils.get_lod_values(context, base_collection)
+        # utils.update_stats_report_and_minsizes(context,base_name)
+        # utils.get_lod_values(context, base_collection)
 
         return {'FINISHED'}
     

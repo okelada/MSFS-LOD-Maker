@@ -123,7 +123,10 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
             row.alignment = 'LEFT'
             row.prop(lod_props, "vertex_color_mode", text="Vertex Colors")
             row = col.row(align=True)
-            row.prop(lod_props, "shrinkwarp_bottom_face", text="Shrinkwrap bottom face")
+            row.alignment = 'LEFT'
+            row.prop(lod_props, "triangulate_after_shrinkwarp", text="Triangulate after shrinkwrap")
+            row = col.row(align=True)
+            row.prop(lod_props, "shrinkwarp_bottom_face", text="Shrinkwrap bottom face too")
             # row = col.row(align=True)
             # row.alignment = 'LEFT'
             # row.prop(lod_props, "lodify_children_names", text="Lodify children's names")
