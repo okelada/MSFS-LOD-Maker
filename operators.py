@@ -487,8 +487,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
         # Use optimal LOD values based on object size and MSFS recommendations        
         
-        object_size = utils.calculate_ID_bounds(self.base_collection)
-        optimal_lod_values = utils.get_lod_values(context, self.base_collection)
+        #object_size = utils.calculate_ID_bounds(self.base_collection)
+        optimal_lod_values,object_size = utils.get_lod_values(context, self.base_collection)
 
         #print(f"Object size: {object_size:.2f}m")
         #print(f"Using optimal LOD values: {optimal_lod_values} (auto-set to default values)")
@@ -945,6 +945,14 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         decimate.iterations = iterations  # Convert to radians
         print(f"    Added unsubdivide decimate modifier for LOD{lod_level:02d}")
     
+    def add_triangulate_faces(self, obj, lod_level,_name = "LOD_triangulate"):
+        """Traingulate faces."""
+        triangulate = obj.modifiers.new(name= _name, type='TRIANGULATE')
+        triangulate.quad_method = 'BEAUTY'
+        triangulate.ngon_method = 'BEAUTY'
+        triangulate.keep_custom_normals = False
+        triangulate.min_vertices = 4 
+        print(f"    Added triangulate modifier for LOD{lod_level:02d}")
 
     def add_shrinkwrap_method(self, original_obj, lod_level, scn, context, vertex_color_mode,gamma_corr,generation_method,just_cubes):
         """Apply shrinkwrap method to create a proxy object with individual cube for each mesh."""
@@ -1058,18 +1066,20 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             if vertex_color_mode != 'AUTO':
                 self.apply_vertex_colors_by_mode(proxy, lod_level,gamma_corr,vertex_color_mode)     
         
+        
+        
         if not just_cubes:
             # Add followup Decimate modifier
             match generation_method:
                 case 'SHRINKWRAP + PLANAR':
-                    self.add_decimate_dissolve(proxy, lod_level, scn.lod.lod3_decimate_planar_angle,_name = "LOD_Shrinkwrap_dissolve")
+                    self.add_decimate_dissolve(proxy, lod_level, scn.lod.lod3_decimate_planar_angle,_name = "LOD_dissolve")
                 case 'SHRINKWRAP + COLLAPSE':
-                    self.add_decimate_collapse(proxy, lod_level, scn.lod.lod3_decimate_collapse_ratio,_name = "LOD_Shrinkwrap_collapse")
+                    self.add_decimate_collapse(proxy, lod_level, scn.lod.lod3_decimate_collapse_ratio,_name = "LOD_collapse")
                 case 'SHRINKWRAP + UNSUBDIVIDE':
-                    self.add_decimate_unsubdivide(proxy, lod_level, scn.lod.lod3_decimate_unsubdiv_iterations,_name = "LOD_Shrinkwrap_unsubdivide")
+                    self.add_decimate_unsubdivide(proxy, lod_level, scn.lod.lod3_decimate_unsubdiv_iterations,_name = "LOD_unsubdivide")
 
-
-        
+        self.add_triangulate_faces(proxy, lod_level)
+       
         #print(f"    Successfully created individual LOD{lod_level:02d} cube proxy '{proxy.name}' for mesh '{original_obj.name}'")
         
         # Return the proxy object for further processing
@@ -1514,8 +1524,8 @@ class LODIFY_OT_calculate_msfs_lod_values(bpy.types.Operator):
         
         #utils.reform_all_object_names()#test only
         # Use optimal LOD values based on object size and MSFS recommendations
-        object_size = utils.calculate_ID_bounds(base_collection)
-        optimal_lod_values = utils.get_lod_values(context, base_collection)
+        #object_size = utils.calculate_ID_bounds(base_collection)
+        optimal_lod_values,object_size = utils.get_lod_values(context, base_collection)
         
         #print(f"Object size: {object_size:.2f}m")
         #print(f"Using optimal LOD values: {optimal_lod_values} (auto-set to default values)")

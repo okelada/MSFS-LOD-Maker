@@ -542,14 +542,13 @@ def get_lod_values(context, base_collection):
         context: Blender context
         base_collection: Base LOD collection for size calculation
     Returns:
-        List of 4 LOD values [LOD0, LOD1, LOD2, LOD3]
+        tuple: List of 4 LOD values [LOD0, LOD1, LOD2, LOD3],max object size
     """
     scn = context.scene
-    
+    object_size = calculate_ID_bounds(base_collection)
+
     if scn.lod.use_automatic_lod_calculation:
         # Use automatic calculation based on object size
-        object_size = calculate_ID_bounds(base_collection)
-
         if  bpy.context.scene.lod.get("minsizes_method", 1) == 1:
             optimal_lod_values = calculate_optimal_lod_values_SDK_Curves()
         else:
@@ -587,7 +586,7 @@ def get_lod_values(context, base_collection):
         generated_lods_minsizes[generated_lods_minsizes_len-2] = max(1.0, generated_lods_minsizes[generated_lods_minsizes_len-2])
 
     for i in range(0, generated_lods_minsizes_len - 1): 
-        if generated_lods_minsizes[generated_lods_minsizes_len - i - 2] <= generated_lods_minsizes[generated_lods_minsizes_len - i - 1]*1.5:
+        if generated_lods_minsizes[generated_lods_minsizes_len - i - 2] <= generated_lods_minsizes[generated_lods_minsizes_len - i - 1] * 1.5:
             generated_lods_minsizes[generated_lods_minsizes_len - i - 2] = generated_lods_minsizes[generated_lods_minsizes_len - i - 1] * 1.5  # Make it 20% bigger than previous
 
     #reform
@@ -602,7 +601,7 @@ def get_lod_values(context, base_collection):
                 j += 1
 
     bpy.context.window_manager.stats_report_minsizes = Vector(modified_optimal_lod_values)
-    return modified_optimal_lod_values
+    return modified_optimal_lod_values,object_size
 
 
 
