@@ -1,36 +1,48 @@
-# MSFS LOD Maker Addon
+# MSFS LOD Maker Blender Addon
 
-## Unofficial fork of Devinci's great MSFS LOD Maker Addon
+## Unofficial fork of Devinci's great MSFS LOD Maker Blender Addon
 I've adapted Devinci's code to my workflow
 
-- **Selection has changed**
-  - Now there has to be a collection with name ending '\_LOD0N' (N being 0,1,2,3) selected in the outliner (highlighted row)
-    or being the active layer (highlighted collection icon), alternatively any child ID will select their higher level parent lod collection,
-    as long as both their names end with '\_LOD0N'. 
-  - The selected lod0 collection will be shown in the 'Generate Lods' button's caption.
-  - Note that the requirement that the base lod0 collection must be suffixed '\_LOD00' stands.
+- **Selection mode has changed**
+  - Now there has to be a collection with name ending '\_LOD0N' (N being 0,1,2,3) ***selected in the outliner*** (highlighted row)
+    or being the ***active layer*** (highlighted collection icon), alternatively any child ID will select their higher level parent lod collection,
+    as long as both their names properly end with '\_LOD0N'. 
+  - The selected lod0 collection will always be shown in the 'Generate Lods' button's caption.<br>
+    >___Note that the requirement that the base lod0 collection must be suffixed '\_LOD00' stands.___
+
 - **Panels** 
   - Generation parameters are now published almost exhaustively.
+  - Both decimation methods and parameters are now adjustable per lod level.
   - There is a results view with the generated vertices and polygons totals.
-  - Lod level collections exclusion from view can be managed from the results view.
-  - Cleanup button has been added, this will remove everything generated.
+  - Lod level collections visibility (exclusion) can be managed from the results view.
+    >___Lod2 and lod3 are stripped of materials and in Blender, they must be visualized in solid shading mode with attributes as color.___
+
+    >___Excluded content might not show up in the multi-exporter if 'visible_only' is active.___
+  - A 'Cleanup' button has been added, this will remove all generated lods but lod0.
 - **Generation** 
-  - Initial duplication of lod1-3 collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
+  - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
   - Exporting Asobo gizmos (collision boxes) and lights is supported.<br>
-    ___Note that Asobo gizmos must be parented to a mesh object in order for them to make it to the gltf, due to a limitation of the multi-exporter (at least with my setup).___
+    >___Note that Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___
+    
   - Minsizes can be calculated as per SDK published curves.
-  - <span style="color:red">**Warning:** </span>___your lod0 children will be renamed___<br>
+  - <span style="color:red">**Warning:** </span>___your lod0 children will be renamed, both nested collections and objects___<br>
     - Their names will be appended '\_LOD00'.<br>
     - Dot characters will be transformed to underscores.<br>
     - '\_NNN\_' can be inserted in some objects' names if the lodified name already exists somewhere else in the blendfile.<br>
-    
+    >___Other than that, your lod0 contents shouldn't be affected but it's always advisable to keep a master copy of your work in a safe place.___
+
     This should enable the multi-exporter to work in both 'Collections' or 'Objects' mode.<br>
-  ___Note that even if this addon supports nested structures, the multi-exporter can have a hard time to group them properly.___
+    
+    >___Note that even if this addon supports nested IDs, the multi-exporter can have a hard time to group them properly.<br>
+  if everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>Resetting multi-exporter filters might help.
+  In general it's easier to work in 'collections' mode with your lod collections being direct children of the scene.___
+  - An optional token can be inserted in the middle of the children's names, to help the multi-exporter recognize lod groups. To revert this insertion, it must be manually removed from lod0 names.
+
 - **Decimation**
-  - There are two decimation passes available, shrinkwrap being possible only in the first one. 
-  - Both decimation methods and parameters are now adjustable per lod.
+  - There are two decimation passes available, shrinkwrap being possible only in the first one.
+  - Shrinkwrap will be post-processed via planar, collapse or subdivide decimation
   - The problem with shrinkwrap results having too dark vertex colors has been partially fixed, so some brightening capabilities have been removed.
-  - A "just cubes" nuclear option method has been added for testing purposes.
+  - A "just cubes" nuclear option method has been added mainly for testing purposes.
 
 <p>
 <br>
