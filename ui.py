@@ -218,19 +218,22 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             row.operator("lodify.cleanup", text = button_text, icon='TRASH')
             #row.active = not base_collection  is None
 
-            utils.update_stats_report_and_minsizes(context,utils.get_root_name_from_ID(base_collection))
-            utils.get_lod_values(context, base_collection)
+            stats_report = utils.update_stats_report_and_minsizes(context,utils.get_root_name_from_ID(base_collection))
+            minsizes,obj_size = utils.get_lod_values(context, base_collection)
+            srp0_v = stats_report[0]
+            srp1_v = stats_report[1]
+            srp2_v = stats_report[2]
+            srp3_v = stats_report[3]
+            # srp0 = bpy.context.window_manager.stats_report_LOD00
+            # srp0_v = mathutils.Vector(srp0)
+            # srp1 = bpy.context.window_manager.stats_report_LOD01
+            # srp1_v = mathutils.Vector(srp1)
+            # srp2 = bpy.context.window_manager.stats_report_LOD02
+            # srp2_v = mathutils.Vector(srp2)
+            # srp3 =bpy.context.window_manager.stats_report_LOD03
+            # srp3_v = mathutils.Vector(srp3)
 
-            srp0 = bpy.context.window_manager.stats_report_LOD00
-            srp0_v = mathutils.Vector(srp0)
-            srp1 = bpy.context.window_manager.stats_report_LOD01
-            srp1_v = mathutils.Vector(srp1)
-            srp2 = bpy.context.window_manager.stats_report_LOD02
-            srp2_v = mathutils.Vector(srp2)
-            srp3 =bpy.context.window_manager.stats_report_LOD03
-            srp3_v = mathutils.Vector(srp3)
-
-            minsizes =bpy.context.window_manager.stats_report_minsizes
+            # minsizes =bpy.context.window_manager.stats_report_minsizes
             minsizes_v = mathutils.Vector(minsizes)
 
             col.separator(factor = 2.0,type = 'LINE')

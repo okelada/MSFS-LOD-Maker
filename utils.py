@@ -59,8 +59,8 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
             #                 #root_name = child_root_name
             #                 break
             def is_ID_lod0_child(_id,base_collection):
-                children_collections_flat = base_collection.children_recursive
-                children_objects_flat = base_collection.all_objects
+                children_collections_flat = list(base_collection.children_recursive)
+                children_objects_flat = list(base_collection.all_objects)
 
                 if type(_id) is bpy.types.Collection and _id in children_collections_flat:
                     return True    
@@ -88,7 +88,7 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
                     print(f"Ignoring LOD group: '{msfs_lod_group.name}' , not our Lod")
                     continue
 
-
+            lod_values,obj_size = get_lod_values(bpy.context,linked_id)
 
             # Enable the LOD group (if it has the enabled attribute)
             if hasattr(msfs_lod_group, 'enabled'):
@@ -539,23 +539,26 @@ def get_ID_Totals(context,id):
 
 
 def update_stats_report_and_minsizes(context,base_name):
+    stats_report = []
     for i in range(4):
         srp = (-1.0,-1.0,-1.0)
         coll = bpy.data.collections.get(base_name + f"_LOD{i:02d}")
         if not coll is None and context.scene.user_of_id(coll):
             sumvertices,sumpolygons,summaterials = get_ID_Totals(context,coll)
-            srp = (sumvertices,sumpolygons,summaterials)
+            level_totals = list((sumvertices,sumpolygons,summaterials))
+            stats_report.append(level_totals)
+        #    srp = (sumvertices,sumpolygons,summaterials)
 
-        match i:
-            case 0:
-                bpy.context.window_manager.stats_report_LOD00 = srp
-            case 1:
-                bpy.context.window_manager.stats_report_LOD01 = srp
-            case 2:
-                bpy.context.window_manager.stats_report_LOD02 = srp
-            case 3:
-                bpy.context.window_manager.stats_report_LOD03 = srp
-        
+        # match i:
+        #     case 0:
+        #         bpy.context.window_manager.stats_report_LOD00 = srp
+        #     case 1:
+        #         bpy.context.window_manager.stats_report_LOD01 = srp
+        #     case 2:
+        #         bpy.context.window_manager.stats_report_LOD02 = srp
+        #     case 3:
+        #         bpy.context.window_manager.stats_report_LOD03 = srp
+    return stats_report
 
 def calculate_ID_bounds(id):
     """
@@ -777,7 +780,7 @@ def get_lod_values(context, id):
                 modified_optimal_lod_values.append(generated_lods_minsizes[j])
                 j += 1
 
-    bpy.context.window_manager.stats_report_minsizes = Vector(modified_optimal_lod_values)
+    #bpy.context.window_manager.stats_report_minsizes = Vector(modified_optimal_lod_values)
     return modified_optimal_lod_values,object_size
 
 

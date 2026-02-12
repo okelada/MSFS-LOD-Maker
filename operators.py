@@ -1407,12 +1407,12 @@ def register():
         except ValueError as e:
             print(f"Warning: Operator class {cls.__name__} registration issue: {e}")
 
-    bpy.types.WindowManager.stats_report_LOD00 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
-    bpy.types.WindowManager.stats_report_LOD01 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
-    bpy.types.WindowManager.stats_report_LOD02 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
-    bpy.types.WindowManager.stats_report_LOD03 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
-    bpy.types.WindowManager.stats_report_minsizes = bpy.props.FloatVectorProperty(size = 4,default=(-1.0,-1.0,-1.0,-1.0))
-    #bpy.types.WindowManager.lod_list = CollectionProperty(type=LODIFY_props_list)
+    # bpy.types.WindowManager.stats_report_LOD00 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
+    # bpy.types.WindowManager.stats_report_LOD01 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
+    # bpy.types.WindowManager.stats_report_LOD02 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
+    # bpy.types.WindowManager.stats_report_LOD03 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
+    # bpy.types.WindowManager.stats_report_minsizes = bpy.props.FloatVectorProperty(size = 4,default=(-1.0,-1.0,-1.0,-1.0))
+    # bpy.types.WindowManager.lod_list = CollectionProperty(type=LODIFY_props_list)
     bpy.types.WindowManager.progress =  FloatProperty( default=0.0, min=0.0, max=100.0, subtype='PERCENTAGE')
 
 def unregister():
