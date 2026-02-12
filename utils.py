@@ -5,6 +5,177 @@ from collections import defaultdict
 from bisect import bisect_left
 from mathutils import Vector
 
+def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
+    """
+    Set LOD values in the MSFS Multi-Export addon.
+    Args:
+        base_collection_name: Name of the base collection (without _LOD00 suffix)
+        lod_values: List of 4 LOD values to set
+    """
+    
+    try:
+        print(f"=== Setting MSFS LOD Values ===")
+        # print(f"Base collection name: '{base_collection_name}'")
+        # print(f"LOD values to set: {lod_values}")
+        
+        # Check if MSFS Multi-Export addon is available
+        if not hasattr(bpy.context.scene, 'msfs_multi_exporter_lod_groups'):
+            print("ERROR: MSFS Multi-Export addon not found or not enabled")
+            return False
+        
+        msfs_lod_groups = bpy.context.scene.msfs_multi_exporter_lod_groups
+        print(f"Found {len(msfs_lod_groups)} existing LOD groups in MSFS Multi-Export")
+        
+        # List all existing groups for debugging
+        # for i, group in enumerate(msfs_lod_groups):
+        #     print(f"  Existing group {i}: '{group.name}'")
+        
+        # Find or create the LOD group for this collection
+        base_root_name = get_root_name_from_ID(base_collection)
+        generated_lods = list(get_generated_lod_list())
+
+        # children_collections_flat = base_collection.children_recursive
+        # children_objects_flat = base_collection.all_objects
+
+        for msfs_lod_group in msfs_lod_groups:
+            #msfs_lod_group = None 
+            #root_name = ''
+           
+            # if hasattr(group, 'name'):
+            #     if group.name == base_root_name:
+            #         msfs_lod_group = group 
+            #         #root_name = base_root_name
+            #     else:
+            #         for c in children_collections_flat:
+            #             child_root_name = get_root_name_from_ID(c)
+            #             if child_root_name == group.name:
+            #                 msfs_lod_group = group
+            #                 #root_name = child_root_name
+            #                 break 
+            #         for o in children_objects_flat:
+            #             child_root_name = get_root_name_from_ID(o)
+            #             if child_root_name == group.name:
+            #                 msfs_lod_group = group
+            #                 #root_name = child_root_name
+            #                 break
+            def is_ID_lod0_child(_id,base_collection):
+                children_collections_flat = base_collection.children_recursive
+                children_objects_flat = base_collection.all_objects
+
+                if type(_id) is bpy.types.Collection and _id in children_collections_flat:
+                    return True    
+                if type(_id) is bpy.types.Object and _id in children_objects_flat:
+                    return True    
+                return False
+                    
+            if not msfs_lod_group or not msfs_lod_group.lods or len(msfs_lod_group.lods) == 0:
+                continue
+            
+            linked_id = None
+            if msfs_lod_group.lods[0].collection == base_collection:
+                linked_id = base_collection
+            else:
+                if msfs_lod_group.lods[0].collection is None:
+                    if msfs_lod_group.lods[0].objectLOD is None:
+                        print(f"Ignoring LOD group: '{msfs_lod_group.name}' , empty")
+                        continue
+                    else:
+                        linked_id = msfs_lod_group.lods[0].objectLOD
+                else:
+                    linked_id = msfs_lod_group.lods[0].collection
+
+                if not is_ID_lod0_child(linked_id,base_collection):
+                    print(f"Ignoring LOD group: '{msfs_lod_group.name}' , not our Lod")
+                    continue
+
+
+
+            # Enable the LOD group (if it has the enabled attribute)
+            if hasattr(msfs_lod_group, 'enabled'):
+                msfs_lod_group.enabled = True
+                print(f"Enabled LOD group: '{msfs_lod_group.name}'")
+            else:
+                print(f"Warning: LOD group doesn't have 'enabled' attribute - MSFS Multi-Export version mismatch")
+                return False
+            # Ensure we have 4 LOD entries (if lods attribute exists)
+            if hasattr(msfs_lod_group, 'lods'):
+                #current_lod_count = len(msfs_lod_group.lods)
+                #print(f"Current LOD count: {current_lod_count}")
+                while len(msfs_lod_group.lods) < max(4,len(generated_lods)):
+                    msfs_lod_group.lods.add()
+                    print(f"Added LOD entry, now have {len(msfs_lod_group.lods)} LODs")
+                
+                print(f"LOD group '{msfs_lod_group.name}' now has {len(msfs_lod_group.lods)} LOD entries")
+                
+                # Set the LOD values and verify they're set
+                i = 0
+                for lod_item in generated_lods:
+                    addon_lod_level = lod_item.ui_lod_level
+                    value = lod_values[addon_lod_level]
+                    #lod_base_collection_name = root_name + f"_LOD{i:02d}"
+                    if value != -1.0 and i < len(msfs_lod_group.lods) and hasattr(msfs_lod_group.lods[i], 'lod_value'):
+                        msfs_lod_group.lods[i].lod_value = value
+                        new_value = getattr(msfs_lod_group.lods[i], 'lod_value', 0.0) 
+                        # Verify the value was set correctly
+                        if abs(new_value - value) > 0.001:
+                            print(f"WARNING: LOD{i} value not set correctly! Expected {value}, got {new_value}")
+                    else:
+                        print(f"WARNING: LOD{i} entry missing or no lod_value attribute")
+                    i += 1
+                # Force an update of the UI
+                try:
+                    bpy.context.area.tag_redraw()
+                except:
+                    pass
+                
+                #Final verification
+                print(f"=== Final LOD Values ===")
+                for i in range(4):
+                    if i < len(msfs_lod_group.lods) and hasattr(msfs_lod_group.lods[i], 'lod_value'):
+                        print(f"LOD{i}: {msfs_lod_group.lods[i].lod_value:.01f}")
+                    else:
+                        print(f"LOD{i}: NOT SET")
+            else:
+                print(f"Warning: LOD group doesn't have 'lods' attribute - MSFS Multi-Export version mismatch")
+                return False
+        
+        print(f"Successfully set MSFS LOD values for '{base_root_name}' and children")
+        return True
+        
+    except Exception as e:
+        print(f"ERROR setting MSFS Multi-Export LOD values: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+
+def merge_vertices_by_distance(obj, context,lod_level):
+    """Merge vertices by distance for the given object."""
+
+    match lod_level:
+        case 1:
+            merge_threshold = context.scene.lod.lod1_merge_threshold 
+        case 2:
+            merge_threshold = context.scene.lod.lod2_merge_threshold 
+        case 3:
+            merge_threshold = context.scene.lod.lod3_merge_threshold
+    if context.view_layer.objects.active:
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    context.view_layer.objects.active = obj
+    
+    # Enter edit mode and merge vertices by distance
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.remove_doubles(threshold=merge_threshold)  # 0.0001m threshold
+    bpy.ops.object.mode_set(mode='OBJECT')
+    
+    print(f"    Merged vertices by distance ({merge_threshold}m) for {obj.name}")
+
+
 def get_generated_lod_list():
     return bpy.context.scene.lod.lod_list
     #return bpy.types.WindowManager.lod_list
@@ -497,35 +668,42 @@ def calculate_optimal_lod_values(object_size_meters):
 
 
 
-def calculate_optimal_lod_values_SDK_Curves():
+def calculate_optimal_lod_values_SDK_Curves(id):
     minsize0 = -1.0
     minsize1 = -1.0
     minsize2 = -1.0
     minsize3 = -1.0
 
+    sumvertices,sumpolygons,summaterials = get_ID_Totals( bpy.context,id)
+
     maxvertices = minSizes_FS2024[0]
     integer_value = bpy.context.scene.lod.get("lod_minsizes_quality", 1)
     minsizes_percent = minSizes_FS2024[int(integer_value+1)]
 
-    srp0 = bpy.context.window_manager.stats_report_LOD00 
-    srp0_v = Vector(srp0)   
-    if srp0_v[0] != -1.0:
-        minsize0 = lookup(srp0_v[0], maxvertices, minsizes_percent)
+    minsize0 = lookup(sumvertices, maxvertices, minsizes_percent)
+    minsize1 = lookup(sumvertices, maxvertices, minsizes_percent)
+    minsize2 = lookup(sumvertices, maxvertices, minsizes_percent)
+    minsize3 = lookup(sumvertices, maxvertices, minsizes_percent)
 
-    srp1 = bpy.context.window_manager.stats_report_LOD01
-    srp1_v = Vector(srp1)
-    if srp1_v[0] != -1.0:
-        minsize1 = lookup(srp1_v[0], maxvertices, minsizes_percent)
+    # srp0 = bpy.context.window_manager.stats_report_LOD00 
+    # srp0_v = Vector(srp0)   
+    # if srp0_v[0] != -1.0:
+    #     minsize0 = lookup(srp0_v[0], maxvertices, minsizes_percent)
 
-    srp2 = bpy.context.window_manager.stats_report_LOD02
-    srp2_v = Vector(srp2)
-    if srp2_v[0] != -1.0:
-        minsize2 = lookup(srp2_v[0], maxvertices, minsizes_percent)
+    # srp1 = bpy.context.window_manager.stats_report_LOD01
+    # srp1_v = Vector(srp1)
+    # if srp1_v[0] != -1.0:
+    #     minsize1 = lookup(srp1_v[0], maxvertices, minsizes_percent)
 
-    srp3 = bpy.context.window_manager.stats_report_LOD03
-    srp3_v = Vector(srp3)
-    if srp3_v[0] != -1.0:
-        minsize3 = lookup(srp3_v[0], maxvertices, minsizes_percent)
+    # srp2 = bpy.context.window_manager.stats_report_LOD02
+    # srp2_v = Vector(srp2)
+    # if srp2_v[0] != -1.0:
+    #     minsize2 = lookup(srp2_v[0], maxvertices, minsizes_percent)
+
+    # srp3 = bpy.context.window_manager.stats_report_LOD03
+    # srp3_v = Vector(srp3)
+    # if srp3_v[0] != -1.0:
+    #     minsize3 = lookup(srp3_v[0], maxvertices, minsizes_percent)
   
     sdk_minSizes = [minsize0,minsize1, minsize2, minsize3]
 
@@ -534,22 +712,22 @@ def calculate_optimal_lod_values_SDK_Curves():
 
 
 
-def get_lod_values(context, base_collection):
+def get_lod_values(context, id):
     """
     Get LOD values either from automatic calculation or manual settings.
     Args:
         context: Blender context
-        base_collection: Base LOD collection for size calculation
+        id: object or collection for size calculation
     Returns:
         tuple: List of 4 LOD values [LOD0, LOD1, LOD2, LOD3],max object size
     """
     scn = context.scene
-    object_size = calculate_ID_bounds(base_collection)
+    object_size = calculate_ID_bounds(id)
 
     if scn.lod.use_automatic_lod_calculation:
         # Use automatic calculation based on object size
         if  bpy.context.scene.lod.get("minsizes_method", 1) == 1:
-            optimal_lod_values = calculate_optimal_lod_values_SDK_Curves()
+            optimal_lod_values = calculate_optimal_lod_values_SDK_Curves(id)
         else:
             optimal_lod_values = calculate_optimal_lod_values(object_size)            
     else:

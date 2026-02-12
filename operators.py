@@ -17,147 +17,7 @@ import math
 from . import utils
 
 
-def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
-    """
-    Set LOD values in the MSFS Multi-Export addon.
-    Args:
-        base_collection_name: Name of the base collection (without _LOD00 suffix)
-        lod_values: List of 4 LOD values to set
-    """
-    
-    try:
-        print(f"=== Setting MSFS LOD Values ===")
-        # print(f"Base collection name: '{base_collection_name}'")
-        # print(f"LOD values to set: {lod_values}")
-        
-        # Check if MSFS Multi-Export addon is available
-        if not hasattr(bpy.context.scene, 'msfs_multi_exporter_lod_groups'):
-            print("ERROR: MSFS Multi-Export addon not found or not enabled")
-            return False
-        
-        msfs_lod_groups = bpy.context.scene.msfs_multi_exporter_lod_groups
-        print(f"Found {len(msfs_lod_groups)} existing LOD groups in MSFS Multi-Export")
-        
-        # List all existing groups for debugging
-        # for i, group in enumerate(msfs_lod_groups):
-        #     print(f"  Existing group {i}: '{group.name}'")
-        
-        # Find or create the LOD group for this collection
-        base_root_name = utils.get_root_name_from_ID(base_collection)
-        generated_lods = list(utils.get_generated_lod_list())
 
-        children_collections_flat = base_collection.children_recursive
-        children_objects_flat = base_collection.all_objects
-
-        for group in msfs_lod_groups:
-            msfs_lod_group = None 
-            #root_name = ''
-           
-            if hasattr(group, 'name'):
-                if group.name == base_root_name:
-                    msfs_lod_group = group 
-                    #root_name = base_root_name
-                else:
-                    for c in children_collections_flat:
-                        child_root_name = utils.get_root_name_from_ID(c)
-                        if child_root_name == group.name:
-                            msfs_lod_group = group
-                            #root_name = child_root_name
-                            break 
-                    for o in children_objects_flat:
-                        child_root_name = utils.get_root_name_from_ID(o)
-                        if child_root_name == group.name:
-                            msfs_lod_group = group
-                            #root_name = child_root_name
-                            break
-        
-            if not msfs_lod_group:
-                continue
-
-            # Enable the LOD group (if it has the enabled attribute)
-            if hasattr(msfs_lod_group, 'enabled'):
-                msfs_lod_group.enabled = True
-                print(f"Enabled LOD group: '{msfs_lod_group.name}'")
-            else:
-                print(f"Warning: LOD group doesn't have 'enabled' attribute - MSFS Multi-Export version mismatch")
-                return False
-            # Ensure we have 4 LOD entries (if lods attribute exists)
-            if hasattr(msfs_lod_group, 'lods'):
-                #current_lod_count = len(msfs_lod_group.lods)
-                #print(f"Current LOD count: {current_lod_count}")
-                while len(msfs_lod_group.lods) < max(4,len(generated_lods)):
-                    msfs_lod_group.lods.add()
-                    print(f"Added LOD entry, now have {len(msfs_lod_group.lods)} LODs")
-                
-                print(f"LOD group '{msfs_lod_group.name}' now has {len(msfs_lod_group.lods)} LOD entries")
-                
-                # Set the LOD values and verify they're set
-                i = 0
-                for lod_item in generated_lods:
-                    addon_lod_level = lod_item.ui_lod_level
-                    value = lod_values[addon_lod_level]
-                    #lod_base_collection_name = root_name + f"_LOD{i:02d}"
-                    if value != -1.0 and i < len(msfs_lod_group.lods) and hasattr(msfs_lod_group.lods[i], 'lod_value'):
-                        msfs_lod_group.lods[i].lod_value = value
-                        new_value = getattr(msfs_lod_group.lods[i], 'lod_value', 0.0) 
-                        # Verify the value was set correctly
-                        if abs(new_value - value) > 0.001:
-                            print(f"WARNING: LOD{i} value not set correctly! Expected {value}, got {new_value}")
-                    else:
-                        print(f"WARNING: LOD{i} entry missing or no lod_value attribute")
-                    i += 1
-                # Force an update of the UI
-                try:
-                    bpy.context.area.tag_redraw()
-                except:
-                    pass
-                
-                #Final verification
-                print(f"=== Final LOD Values ===")
-                for i in range(4):
-                    if i < len(msfs_lod_group.lods) and hasattr(msfs_lod_group.lods[i], 'lod_value'):
-                        print(f"LOD{i}: {msfs_lod_group.lods[i].lod_value:.01f}")
-                    else:
-                        print(f"LOD{i}: NOT SET")
-            else:
-                print(f"Warning: LOD group doesn't have 'lods' attribute - MSFS Multi-Export version mismatch")
-                return False
-        
-        print(f"Successfully set MSFS LOD values for '{base_root_name}' and children")
-        return True
-        
-    except Exception as e:
-        print(f"ERROR setting MSFS Multi-Export LOD values: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-
-
-def merge_vertices_by_distance(obj, context,lod_level):
-    """Merge vertices by distance for the given object."""
-
-    match lod_level:
-        case 1:
-            merge_threshold = context.scene.lod.lod1_merge_threshold 
-        case 2:
-            merge_threshold = context.scene.lod.lod2_merge_threshold 
-        case 3:
-            merge_threshold = context.scene.lod.lod3_merge_threshold
-    if context.view_layer.objects.active:
-        bpy.ops.object.mode_set(mode='OBJECT')
-
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    context.view_layer.objects.active = obj
-    
-    # Enter edit mode and merge vertices by distance
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.mesh.remove_doubles(threshold=merge_threshold)  # 0.0001m threshold
-    bpy.ops.object.mode_set(mode='OBJECT')
-    
-    print(f"    Merged vertices by distance ({merge_threshold}m) for {obj.name}")
 
 
 
@@ -491,7 +351,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         #print(f"=== Setting Optimal LOD Values After Generation ===")
         try:
             # Use the optimal lod values
-            lod_values_set = set_msfs_multi_exporter_lod_values(self.base_collection, optimal_lod_values)
+            lod_values_set = utils.set_msfs_multi_exporter_lod_values(self.base_collection, optimal_lod_values)
             print(f"Successfully called set_default_lod_values operator")
         except Exception as e:
             print(f"ERROR: Failed to call set_default_lod_values operator: {str(e)}")
@@ -680,7 +540,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     final_obj = self.apply_lod_generation_method(final_obj, lod_level, 2, scn, context, shrinkwrapped_proxies)
                     # Merge vertices by distance for the final object
                     if final_obj:
-                        merge_vertices_by_distance(final_obj, context,lod_level)
+                        utils.merge_vertices_by_distance(final_obj, context,lod_level)
                 else:
                     utils.lodify_name(obj,lod_level)
         
@@ -714,7 +574,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 final_obj = self.apply_lod_generation_method(final_obj, 3, 2, scn, context, shrinkwrapped_proxies)
                 # Merge vertices by distance for the final object
                 if final_obj:
-                    merge_vertices_by_distance(final_obj, context,3)
+                    utils.merge_vertices_by_distance(final_obj, context,3)
             else:
                 utils.lodify_name(obj,3)
 
@@ -748,7 +608,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 final_obj = self.apply_lod_generation_method(final_obj, 3, 2, scn, context, shrinkwrapped_proxies)
                 # Merge vertices by distance for the final object
                 if final_obj:
-                    merge_vertices_by_distance(final_obj, context,3)
+                    utils.merge_vertices_by_distance(final_obj, context,3)
                 # Process child collections
             else:
                 utils.lodify_name(obj,3)
@@ -1417,7 +1277,7 @@ class LODIFY_OT_set_default_lod_values(bpy.types.Operator):
         print(f"Setting default LOD values: {utils.default_lod_values}")
         
         # Set LOD values in MSFS Multi-Export addon
-        lod_values_set = set_msfs_multi_exporter_lod_values(base_collection, utils.default_lod_values)
+        lod_values_set = utils.set_msfs_multi_exporter_lod_values(base_collection, utils.default_lod_values)
         if lod_values_set:
             self.report({'INFO'}, f"Set default MSFS LOD values: {utils.default_lod_values}")
         else:
@@ -1456,7 +1316,7 @@ class LODIFY_OT_calculate_msfs_lod_values(bpy.types.Operator):
         #print(f"Using optimal LOD values: {optimal_lod_values} (auto-set to default values)")
         
         # Set LOD values in MSFS Multi-Export addon
-        lod_values_set = set_msfs_multi_exporter_lod_values(base_collection, optimal_lod_values)
+        lod_values_set = utils.set_msfs_multi_exporter_lod_values(base_collection, optimal_lod_values)
         if lod_values_set:
             self.report({'INFO'}, f"Set default MSFS LOD values: {optimal_lod_values}")
         else:
