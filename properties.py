@@ -25,6 +25,17 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         default=True
     )
 
+    collision_boxes_target: EnumProperty(
+        name="collision boxes target",
+        description="Create collision boxes around collections or objects",
+        items=[
+            ('COLLECTIONS', "Collections", "Create collisison boxes around collections containing objects"),
+            ('OBJECTS', "Objects", "Create collisison boxes around objects"),
+        ],
+        default='COLLECTIONS'
+    )
+
+
 
     manual_lod_values: StringProperty(
         name="Manual LOD Values",

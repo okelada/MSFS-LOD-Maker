@@ -26,16 +26,48 @@ def remove_collision_boxes_to_generated_objects():
         if coll:#CHECKME
             make_collection_active(coll)
             children_objects_flat = list(coll.all_objects)
-            gizmo_objects_flat = []
+            old_gizmo_objects_flat = []
             for child in children_objects_flat:
                 if child.type == 'MESH':
                     for child_child in  child.children:
                         if child_child.type == 'EMPTY' and child_child.msfs_gizmo_type == 'box':
-                            gizmo_objects_flat.append(child_child)
+                            old_gizmo_objects_flat.append(child_child)
     
-            for gizmo in gizmo_objects_flat:
+            for gizmo in old_gizmo_objects_flat:
                 bpy.data.objects.remove(gizmo,do_unlink=True,do_id_user=True,do_ui_user=True)
                         
+
+
+def add_collision_boxes_to_generated_collections(lod0Only):
+    lod_list = list(get_generated_lod_list())
+    bpy.ops.object.select_all(action='DESELECT')
+
+    for lod in lod_list:
+        if lod0Only and lod.ui_lod_level != 0:
+            continue
+        coll = lod.ui_lod_collection
+        make_collection_active(coll)
+
+        for child_obj in list(coll.all_objects):
+            if child_obj.type == 'EMPTY' and child_obj.msfs_gizmo_type == 'box':
+                bpy.data.objects.remove(child_obj,do_unlink=True,do_id_user=True,do_ui_user=True)
+        children_collections_flat = [coll] + list(coll.children_recursive)
+        
+        for c in children_collections_flat:
+            if len(c.objects) == 0:
+                continue
+            position,sizes = calculate_ID_bounds(c)
+
+            for child_obj in c.all_objects:
+                if child_obj.type == 'MESH':
+                    child_obj.select_set(True)
+                    bpy.context.view_layer.objects.active = child_obj        
+                    bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box')
+                    gizmo =  bpy.context.view_layer.objects.active
+                    gizmo.name = "Collision_Box_" + c.name
+                    gizmo.location = Vector(position)
+                    gizmo.scale = Vector(sizes)/2.0
+                    break
 
 
 def add_collision_boxes_to_generated_objects(lod0Only):
@@ -86,9 +118,6 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
     
     try:
         print(f"=== Setting MSFS LOD Values ===")
-        # print(f"Base collection name: '{base_collection_name}'")
-        # print(f"LOD values to set: {lod_values}")
-        
         # Check if MSFS Multi-Export addon is available
         if not hasattr(bpy.context.scene, 'msfs_multi_exporter_lod_groups'):
             print("ERROR: MSFS Multi-Export addon not found or not enabled")
@@ -96,10 +125,6 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
         
         msfs_lod_groups = bpy.context.scene.msfs_multi_exporter_lod_groups
         print(f"Found {len(msfs_lod_groups)} existing LOD groups in MSFS Multi-Export")
-        
-        # List all existing groups for debugging
-        # for i, group in enumerate(msfs_lod_groups):
-        #     print(f"  Existing group {i}: '{group.name}'")
         
         # Find or create the LOD group for this collection
         base_root_name = get_root_name_from_ID(base_collection)
@@ -140,8 +165,6 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
                 return False
             # Ensure we have 4 LOD entries (if lods attribute exists)
             if hasattr(msfs_lod_group, 'lods'):
-                #current_lod_count = len(msfs_lod_group.lods)
-                #print(f"Current LOD count: {current_lod_count}")
                 while len(msfs_lod_group.lods) < max(4,len(generated_lods)):
                     msfs_lod_group.lods.add()
                     print(f"Added LOD entry, now have {len(msfs_lod_group.lods)} LODs")
@@ -163,10 +186,10 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
                         print(f"WARNING: LOD{i} entry missing or no lod_value attribute")
                     i += 1
                 # Force an update of the UI
-                try:
-                    bpy.context.area.tag_redraw()
-                except:
-                    pass
+                # try:
+                #     bpy.context.area.tag_redraw()
+                # except:
+                #     pass
                 
                 #Final verification
                 print(f"=== Final LOD Values ===")
@@ -376,7 +399,6 @@ def lodify_name(id,lod_level):
         else:
             insert_token = ''
 
-        
     new_name = stripped_name + insert_token + f"_LOD{lod_level:02d}" #new lod suffix
 
     if type(id) is bpy.types.Object:
@@ -391,7 +413,6 @@ def lodify_name(id,lod_level):
                     break
             else:
                 break
-
     if type(id) is bpy.types.Collection:
         while True:
             if new_name in bpy.data.collections:
@@ -406,10 +427,6 @@ def lodify_name(id,lod_level):
                 break
         #id.color_tag = f'COLOR_0{lod_level+1}'
     id.name = new_name
-
-
-
-
 
 
 def remove_lod_collection(base_name,lod_level):
@@ -451,8 +468,6 @@ def remove_lod_collection(base_name,lod_level):
         for lod in lod_list:
             lod_list.remove(lod)
 
-
-        
 
 def reparent_child(child,new_parent):
     # parent_inverse_world_matrix = new_parent.matrix_world.inverted()
@@ -628,8 +643,10 @@ def calculate_ID_bounds(id):
     if min_coords.x == float('inf'):
         return 0.0
     
+    position = (max_coords + min_coords)/2
+    
     dimensions = max_coords - min_coords
-    return max(dimensions.x, dimensions.y, dimensions.z)
+    return (position.x,position.y,position.z),(dimensions.x, dimensions.y, dimensions.z)
 
 
 def calculate_optimal_lod_values(object_size_meters):
@@ -698,9 +715,6 @@ def calculate_optimal_lod_values(object_size_meters):
     return lod_values
 
 
-
-
-
 def calculate_optimal_lod_values_SDK_Curves(id):
     minsize0,minsize1,minsize2,minsize3 = -1.0,-1.0,-1.0,-1.0
     id0,id1,id2,id3 = None,None,None,None
@@ -753,8 +767,8 @@ def get_lod_values(context, id):
         tuple: List of 4 LOD values [LOD0, LOD1, LOD2, LOD3],max object size
     """
     scn = context.scene
-    object_size = calculate_ID_bounds(id)
-
+    object_position,object_sizes = calculate_ID_bounds(id)
+    object_size = max(object_sizes[0],object_sizes[1],object_sizes[2])
     if scn.lod.use_automatic_lod_calculation:
         # Use automatic calculation based on object size
         if  bpy.context.scene.lod.get("minsizes_method", 1) == 1:

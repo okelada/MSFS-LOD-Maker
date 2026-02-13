@@ -49,10 +49,6 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
            
         utils.make_collection_active(base_collection)
         bpy.ops.msfs2024.reload_lod_groups()
-
-        #utils.update_stats_report_and_minsizes(context,base_name)
-        #utils.get_lod_values(context, base_collection)
-        #self.report({'INFO'}, f"Generated {lod_list_str} for {size_description} object ({object_size:.2f}m). Method: {method_description}. Vertex Colors: {vertex_color_mode}. MSFS LOD values: {optimal_lod_values}")
         return {'FINISHED'}
 
 class LODIFY_OT_add_collision_boxes(bpy.types.Operator):
@@ -76,7 +72,10 @@ class LODIFY_OT_add_collision_boxes(bpy.types.Operator):
             
         print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
-        utils.add_collision_boxes_to_generated_objects(scn.lod.collision_boxes_to_lod0_only)
+        if scn.lod.collision_boxes_target == 'COLLECTIONS':
+            utils.add_collision_boxes_to_generated_collections(scn.lod.collision_boxes_to_lod0_only)
+        else:
+            utils.add_collision_boxes_to_generated_objects(scn.lod.collision_boxes_to_lod0_only)
 
         return {'FINISHED'}
 
@@ -172,9 +171,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
     def execute(self, context):
         scn = context.scene
         self.base_collection,self.parent_collection = utils.find_base_collection()
-        
         wm = bpy.context.window_manager
-
         wm.progress =  0
         wm.progress_begin(0, 100)
         wm.progress_update(wm.progress)
@@ -234,9 +231,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         # Calculate total objects based on selected LODs
         base_mesh_count = len(self.base_collection.all_objects)
         total_objects =  base_mesh_count * len(lods_to_generate)
-
         processed_objects = 0
-
         # Set color tag for base LOD
         self.base_collection.color_tag = 'COLOR_01'
         #if bpy.context.scene.lod.lodify_children_names:
@@ -246,8 +241,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         item = utils.get_generated_lod_list().add()
         item.ui_lod_collection = self.base_collection
         item.ui_lod_level = 0
-        # item.ui_rdf = True
-        # item.ui_rdv = True
 
         base_lod03_collection = self.base_collection
      
@@ -262,7 +255,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             if lod_collection:
                 print(f"  Found existing collection: '{lod_name}'")
                 #include in view layer if needed, otherwise process might fail if objects already exist
-                #layer_lod_collection = recurLayerCollection(bpy.context.view_layer.layer_collection,lod_collection.name)
                 layer_lod_collection = utils.find_layer_collection(lod_collection,bpy.context.view_layer.layer_collection)
                 if layer_lod_collection:
                     layer_lod_collection.exclude = False
@@ -300,10 +292,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 context.workspace.status_text_set(f"Generating LODs: {wm.progress:.1f}%")
             except:
                 pass  # Fallback for older Blender versions
-
-            #removed because it was causing issues
-            #bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
-            #layout.progress(factor=(processed_objects / total_objects))
             wm.progress_update(wm.progress)
 
     
@@ -398,8 +386,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         #print(f"=== Setting Optimal LOD Values After Generation ===")
         try:
             # Use the optimal lod values
-
-
             lod_values_set = utils.set_msfs_multi_exporter_lod_values(self.base_collection, optimal_lod_values)
             print(f"Successfully called set_default_lod_values operator")
         except Exception as e:
@@ -419,15 +405,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         vertex_color_mode = scn.lod.vertex_color_mode
         lod_list_str = ", ".join([f"LOD{i:02d}" for i in lods_to_generate])
         wm.progress_end()
-        
-        # i = 1
-        # for lod_collection in utils.get_generated_lod_list():
-        #     lod_layer_collection = utils.find_layer_collection(lod_collection.ui_lod_collection,bpy.context.view_layer.layer_collection)
-        #     if lod_layer_collection:
-        #         lod_layer_collection.exclude = i < len(utils.get_generated_lod_list())
-        #         bpy.context.view_layer.active_layer_collection = lod_layer_collection 
-        #     i+=1
-
         wm.progress =  100.0
         wm.progress_update(wm.progress)
 
@@ -578,8 +555,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     #merge_threshold = scn.lod.lod1_merge_threshold if lod_level == 1 else scn.lod.lod2_merge_threshold
                     if small_object_threshold > 0 and self.is_object_too_small(obj, small_object_threshold):
                         continue
-                    # Store original materials for vertex color operations
-                    #original_materials = [slot.material for slot in obj.material_slots if slot.material]
                     utils.lodify_name(obj,lod_level)
                     # Apply vertex colors based on selected mode and LOD level
                     self.apply_vertex_colors_by_mode(obj, lod_level,gamma_corr, scn.lod.vertex_color_mode)
@@ -641,8 +616,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             if obj.type == 'MESH':# and not self.is_in_child_lod00(obj, self.base_collection):
                 if scn.lod.lod3_small_object_threshold > 0 and self.is_object_too_small(obj, scn.lod.lod3_small_object_threshold):
                     continue
-                # Store original materials for vertex color operations
-                #original_materials = [slot.material for slot in obj.material_slots if slot.material]
                 utils.lodify_name(obj,3)
                 # Apply vertex colors based on selected mode and LOD level
                 self.apply_vertex_colors_by_mode(obj, 3,scn.lod.lod3_gamma_corr, 'BAKE_ALL')#force bake 03 from 00
@@ -788,10 +761,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
     def add_shrinkwrap_method(self, original_obj, lod_level, scn, context, vertex_color_mode,gamma_corr,generation_method,just_cubes):
         """Apply shrinkwrap method to create a proxy object with individual cube for each mesh."""
-
         # Count vertices in the original mesh to determine subdivision level
         vertex_count = len(original_obj.data.vertices)
-        
         # Calculate subdivision level based on vertex count (adaptive proxy complexity)
         if vertex_count <= 100:
             subdivisions = 2
@@ -805,7 +776,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             subdivisions = 6
         
         #print(f"    Creating individual cube proxy for '{original_obj.name}' ({vertex_count} vertices) using {subdivisions} subdivisions")
-        
         # Get the bounding box and center of the target mesh for precise cube positioning
         target_mesh = original_obj
         bbox_corners = [target_mesh.matrix_world @ Vector(corner) for corner in target_mesh.bound_box]
@@ -853,7 +823,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 # Select the bottom face (face with lowest Z coordinate)
                 bm = bmesh.from_edit_mesh(proxy.data)
                 bm.faces.ensure_lookup_table()
-                
                 # Find the bottom face (the one with the lowest average Z coordinate)
                 bottom_face = None
                 min_z = float('inf')
@@ -1397,12 +1366,6 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
         return {'FINISHED'}
     
 
-
-
-
-
-
-
 classes = (
     LODIFY_OT_generate_lod_decimate,
     LODIFY_OT_cleanup,
@@ -1414,7 +1377,6 @@ classes = (
     LODIFY_OT_remove_collision_boxes
    # LODIFY_props_list
 )
-
 
 
 def register():
