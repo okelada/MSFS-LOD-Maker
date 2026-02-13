@@ -5,7 +5,78 @@ from collections import defaultdict
 from bisect import bisect_left
 from mathutils import Vector
 
-def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
+def make_collection_active(collection):
+    layer_collection = find_layer_collection(collection,bpy.context.view_layer.layer_collection)
+    if layer_collection:#CHECKME
+        layer_collection.exclude = False
+        bpy.context.view_layer.active_layer_collection = layer_collection
+        children_collections_flat = list(collection.children_recursive)
+        for child_coll in children_collections_flat:
+            child_layer_collection = find_layer_collection(child_coll,layer_collection)
+            child_layer_collection.exclude = False
+            bpy.context.view_layer.active_layer_collection = child_layer_collection
+        return True
+    return False
+
+def remove_collision_boxes_to_generated_objects():
+    lod_list = list(get_generated_lod_list())
+    
+    for lod in lod_list:
+        coll = lod.ui_lod_collection
+        if coll:#CHECKME
+            make_collection_active(coll)
+            children_objects_flat = list(coll.all_objects)
+            gizmo_objects_flat = []
+            for child in children_objects_flat:
+                if child.type == 'MESH':
+                    for child_child in  child.children:
+                        if child_child.type == 'EMPTY' and child_child.msfs_gizmo_type == 'box':
+                            gizmo_objects_flat.append(child_child)
+    
+            for gizmo in gizmo_objects_flat:
+                bpy.data.objects.remove(gizmo,do_unlink=True,do_id_user=True,do_ui_user=True)
+                        
+
+
+def add_collision_boxes_to_generated_objects(lod0Only):
+    lod_list = list(get_generated_lod_list())
+    bpy.ops.object.select_all(action='DESELECT')
+
+    for lod in lod_list:
+        if lod0Only and lod.ui_lod_level != 0:
+            continue
+        coll = lod.ui_lod_collection
+        make_collection_active(coll)
+        children_objects_flat = list(coll.all_objects)
+        gizmo_objects_flat = []
+        for child in children_objects_flat:
+            if child.type == 'MESH':
+                for child_child in  child.children:
+                    if child_child.type == 'EMPTY' and child_child.msfs_gizmo_type == 'box':
+                        gizmo_objects_flat.append(child_child)
+
+                child.select_set(True)
+                bpy.context.view_layer.objects.active = child        
+                bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box')
+                bpy.context.view_layer.objects.active.name = "Collision_Box_" + child.name
+        for gizmo in gizmo_objects_flat:
+            bpy.data.objects.remove(gizmo,do_unlink=True,do_id_user=True,do_ui_user=True)
+
+
+
+
+def is_ID_collection_child(_id,base_collection):
+    children_collections_flat = list(base_collection.children_recursive)
+    children_objects_flat = list(base_collection.all_objects)
+
+    if type(_id) is bpy.types.Collection and _id in children_collections_flat:
+        return True    
+    if type(_id) is bpy.types.Object and _id in children_objects_flat:
+        return True    
+    return False
+
+
+def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None):
     """
     Set LOD values in the MSFS Multi-Export addon.
     Args:
@@ -34,40 +105,7 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
         base_root_name = get_root_name_from_ID(base_collection)
         generated_lods = list(get_generated_lod_list())
 
-        # children_collections_flat = base_collection.children_recursive
-        # children_objects_flat = base_collection.all_objects
-
-        for msfs_lod_group in msfs_lod_groups:
-            #msfs_lod_group = None 
-            #root_name = ''
-           
-            # if hasattr(group, 'name'):
-            #     if group.name == base_root_name:
-            #         msfs_lod_group = group 
-            #         #root_name = base_root_name
-            #     else:
-            #         for c in children_collections_flat:
-            #             child_root_name = get_root_name_from_ID(c)
-            #             if child_root_name == group.name:
-            #                 msfs_lod_group = group
-            #                 #root_name = child_root_name
-            #                 break 
-            #         for o in children_objects_flat:
-            #             child_root_name = get_root_name_from_ID(o)
-            #             if child_root_name == group.name:
-            #                 msfs_lod_group = group
-            #                 #root_name = child_root_name
-            #                 break
-            def is_ID_lod0_child(_id,base_collection):
-                children_collections_flat = list(base_collection.children_recursive)
-                children_objects_flat = list(base_collection.all_objects)
-
-                if type(_id) is bpy.types.Collection and _id in children_collections_flat:
-                    return True    
-                if type(_id) is bpy.types.Object and _id in children_objects_flat:
-                    return True    
-                return False
-                    
+        for msfs_lod_group in msfs_lod_groups:    
             if not msfs_lod_group or not msfs_lod_group.lods or len(msfs_lod_group.lods) == 0:
                 continue
             
@@ -84,11 +122,14 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
                 else:
                     linked_id = msfs_lod_group.lods[0].collection
 
-                if not is_ID_lod0_child(linked_id,base_collection):
+                if not is_ID_collection_child(linked_id,base_collection):
                     print(f"Ignoring LOD group: '{msfs_lod_group.name}' , not our Lod")
                     continue
-
-            lod_values,obj_size = get_lod_values(bpy.context,linked_id)
+            
+            if forced_lod_values is None:
+                lod_values,obj_size = get_lod_values(bpy.context,linked_id) #caculated or manual
+            else:
+                lod_values = forced_lod_values
 
             # Enable the LOD group (if it has the enabled attribute)
             if hasattr(msfs_lod_group, 'enabled'):
@@ -106,7 +147,6 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
                     print(f"Added LOD entry, now have {len(msfs_lod_group.lods)} LODs")
                 
                 print(f"LOD group '{msfs_lod_group.name}' now has {len(msfs_lod_group.lods)} LOD entries")
-                
                 # Set the LOD values and verify they're set
                 i = 0
                 for lod_item in generated_lods:
@@ -149,7 +189,6 @@ def set_msfs_multi_exporter_lod_values(base_collection, lod_values):
         return False
 
 
-
 def merge_vertices_by_distance(obj, context,lod_level):
     """Merge vertices by distance for the given object."""
 
@@ -160,6 +199,7 @@ def merge_vertices_by_distance(obj, context,lod_level):
             merge_threshold = context.scene.lod.lod2_merge_threshold 
         case 3:
             merge_threshold = context.scene.lod.lod3_merge_threshold
+
     if context.view_layer.objects.active:
         bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -235,9 +275,6 @@ def find_base_collection(strict = False):
     
     #print("No selected LODNN collection found")
     return None,None
-
-
-
 
 
 def reform_object_names():
@@ -409,11 +446,12 @@ def remove_lod_collection(base_name,lod_level):
             if block.users == 0:
                 bpy.data.images.remove(block,do_unlink=True,do_id_user=True,do_ui_user= True)
 
-        lod_list = get_generated_lod_list()
-        for i,lod in enumerate(lod_list):
-            if lod.ui_lod_level == lod_level:
-                lod_list.remove(i)
-                break
+        lod_list = list(get_generated_lod_list())
+        lod_list[:] = [x for x in lod_list if x.ui_lod_level == lod_level]
+        for lod in lod_list:
+            lod_list.remove(lod)
+
+
         
 
 def reparent_child(child,new_parent):
@@ -541,23 +579,15 @@ def get_ID_Totals(context,id):
 def update_stats_report_and_minsizes(context,base_name):
     stats_report = []
     for i in range(4):
-        srp = (-1.0,-1.0,-1.0)
+
         coll = bpy.data.collections.get(base_name + f"_LOD{i:02d}")
         if not coll is None and context.scene.user_of_id(coll):
             sumvertices,sumpolygons,summaterials = get_ID_Totals(context,coll)
             level_totals = list((sumvertices,sumpolygons,summaterials))
             stats_report.append(level_totals)
-        #    srp = (sumvertices,sumpolygons,summaterials)
+        else:
+            stats_report.append((-1.0,-1.0,-1.0))
 
-        # match i:
-        #     case 0:
-        #         bpy.context.window_manager.stats_report_LOD00 = srp
-        #     case 1:
-        #         bpy.context.window_manager.stats_report_LOD01 = srp
-        #     case 2:
-        #         bpy.context.window_manager.stats_report_LOD02 = srp
-        #     case 3:
-        #         bpy.context.window_manager.stats_report_LOD03 = srp
     return stats_report
 
 def calculate_ID_bounds(id):
@@ -672,46 +702,44 @@ def calculate_optimal_lod_values(object_size_meters):
 
 
 def calculate_optimal_lod_values_SDK_Curves(id):
-    minsize0 = -1.0
-    minsize1 = -1.0
-    minsize2 = -1.0
-    minsize3 = -1.0
-
-    sumvertices,sumpolygons,summaterials = get_ID_Totals( bpy.context,id)
+    minsize0,minsize1,minsize2,minsize3 = -1.0,-1.0,-1.0,-1.0
+    id0,id1,id2,id3 = None,None,None,None
 
     maxvertices = minSizes_FS2024[0]
     integer_value = bpy.context.scene.lod.get("lod_minsizes_quality", 1)
     minsizes_percent = minSizes_FS2024[int(integer_value+1)]
 
-    minsize0 = lookup(sumvertices, maxvertices, minsizes_percent)
-    minsize1 = lookup(sumvertices, maxvertices, minsizes_percent)
-    minsize2 = lookup(sumvertices, maxvertices, minsizes_percent)
-    minsize3 = lookup(sumvertices, maxvertices, minsizes_percent)
+    root_name = get_root_name_from_ID(id)
 
-    # srp0 = bpy.context.window_manager.stats_report_LOD00 
-    # srp0_v = Vector(srp0)   
-    # if srp0_v[0] != -1.0:
-    #     minsize0 = lookup(srp0_v[0], maxvertices, minsizes_percent)
+    if type(id) == bpy.types.Object:
+        id0 = bpy.data.objects.get(root_name + "_LOD00")
+        id1 = bpy.data.objects.get(root_name + "_LOD01")
+        id2 = bpy.data.objects.get(root_name + "_LOD02")
+        id3 = bpy.data.objects.get(root_name + "_LOD03")
+    elif type(id) == bpy.types.Collection:
+        id0 = bpy.data.collections.get(root_name + "_LOD00")
+        id1 = bpy.data.collections.get(root_name + "_LOD01")
+        id2 = bpy.data.collections.get(root_name + "_LOD02")
+        id3 = bpy.data.collections.get(root_name + "_LOD03")
 
-    # srp1 = bpy.context.window_manager.stats_report_LOD01
-    # srp1_v = Vector(srp1)
-    # if srp1_v[0] != -1.0:
-    #     minsize1 = lookup(srp1_v[0], maxvertices, minsizes_percent)
+    if not id0 is None:
+        sumvertices,sumpolygons,summaterials = get_ID_Totals( bpy.context,id0)
+        minsize0 = lookup(sumvertices, maxvertices, minsizes_percent)
 
-    # srp2 = bpy.context.window_manager.stats_report_LOD02
-    # srp2_v = Vector(srp2)
-    # if srp2_v[0] != -1.0:
-    #     minsize2 = lookup(srp2_v[0], maxvertices, minsizes_percent)
+    if not id1 is None:
+        sumvertices,sumpolygons,summaterials = get_ID_Totals( bpy.context,id1)
+        minsize1 = lookup(sumvertices, maxvertices, minsizes_percent)
 
-    # srp3 = bpy.context.window_manager.stats_report_LOD03
-    # srp3_v = Vector(srp3)
-    # if srp3_v[0] != -1.0:
-    #     minsize3 = lookup(srp3_v[0], maxvertices, minsizes_percent)
+    if not id2 is None:
+        sumvertices,sumpolygons,summaterials = get_ID_Totals( bpy.context,id2)
+        minsize2 = lookup(sumvertices, maxvertices, minsizes_percent)
+
+    if not id3 is None:
+        sumvertices,sumpolygons,summaterials = get_ID_Totals( bpy.context,id3)
+        minsize3 = lookup(sumvertices, maxvertices, minsizes_percent)
   
     sdk_minSizes = [minsize0,minsize1, minsize2, minsize3]
-
-
-    return sdk_minSizes 
+    return sdk_minSizes
 
 
 

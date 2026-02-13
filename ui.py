@@ -106,6 +106,7 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
         
         row = col.row(align=True)
         row.prop(lod_props, "show_advanced_settings", icon='TRIA_DOWN' if lod_props.show_advanced_settings else 'TRIA_RIGHT')
+
         if lod_props.show_advanced_settings:
             #col.separator(factor = 2.0,type = 'LINE')
             #col.label(text="Advanced Settings", icon='PREFERENCES')
@@ -131,15 +132,19 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
             # row.alignment = 'LEFT'
             # row.prop(lod_props, "lodify_children_names", text="Lodify children's names")
             #row.prop(lod_props, "lodify_leave_lod0_alone", text="Leave lod0 alone")
-            row = col.row()
+            row = col.row(align=True)
             row.alignment = 'LEFT'
-            row.prop(lod_props, "minsizes_method", text="MinSize calculation method")
+            row.prop(lod_props, "minsizes_method", text="MinSize calculation method",expand = True)
             if scn.lod.get("minsizes_method", 1) == 1:
-                row.prop(lod_props, "lod_minsizes_quality", text="MSFS LOD curve")
+                row.prop(lod_props, "lod_minsizes_quality", text=" MSFS LOD curve")
             row = col.row()
             row.alignment = 'LEFT'
             row.prop(lod_props, "insert_token", text="Inserted token")
             row.label(text = "(To revert: cleanup and manually remove it from lod0 names)")
+            row = col.row()
+            row.alignment = 'LEFT'
+            row.prop(lod_props, "collision_boxes_to_lod0_only", text="Collision boxes to lod0 only")
+
             
 
 
@@ -210,31 +215,33 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
 
             button_text = "Generate LODs - " +  (base_collection.name if base_collection else "no selection")
             row.operator("lodify.generate_lod_decimate", text=button_text, icon='MOD_DECIM')
+            #row.alignment = 'CENTER'
             #row.active = not base_collection  is None
             #cleanup
+            col.separator(factor = 2.0,type = 'LINE')
             row = col.row()
             row.scale_y = 1.5
             button_text = "Cleanup - " +  (base_collection.name if base_collection else "no selection")
             row.operator("lodify.cleanup", text = button_text, icon='TRASH')
+            #row.alignment = 'CENTER'
+            col.separator(factor = 2.0,type = 'LINE')
+            row = col.row()
+            row.scale_y = 1.5
+            
+            button_text = "Add collision boxes to lod0" if scn.lod.collision_boxes_to_lod0_only else "Add collision boxes"
+            row.operator("lodify.add_collision_boxes", text = button_text, icon='CUBE')
+            row.operator("lodify.remove_collision_boxes", text = "Remove collision boxes", icon='EMPTY_DATA')
+            #row.alignment = 'CENTER'
             #row.active = not base_collection  is None
 
             stats_report = utils.update_stats_report_and_minsizes(context,utils.get_root_name_from_ID(base_collection))
             minsizes,obj_size = utils.get_lod_values(context, base_collection)
-            srp0_v = stats_report[0]
-            srp1_v = stats_report[1]
-            srp2_v = stats_report[2]
-            srp3_v = stats_report[3]
-            # srp0 = bpy.context.window_manager.stats_report_LOD00
-            # srp0_v = mathutils.Vector(srp0)
-            # srp1 = bpy.context.window_manager.stats_report_LOD01
-            # srp1_v = mathutils.Vector(srp1)
-            # srp2 = bpy.context.window_manager.stats_report_LOD02
-            # srp2_v = mathutils.Vector(srp2)
-            # srp3 =bpy.context.window_manager.stats_report_LOD03
-            # srp3_v = mathutils.Vector(srp3)
+            srp0 = stats_report[0]
+            srp1 = stats_report[1]
+            srp2 = stats_report[2]
+            srp3 = stats_report[3]
 
-            # minsizes =bpy.context.window_manager.stats_report_minsizes
-            minsizes_v = mathutils.Vector(minsizes)
+            #minsizes_v = mathutils.Vector(minsizes)
 
             col.separator(factor = 2.0,type = 'LINE')
             row = col.row()
@@ -248,31 +255,31 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
 
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD0" if minsizes_v[0] == -1.0 else f"LOD0 ({minsizes_v[0]:.01f})").lod_level = 0
-            col.label(text=f"{int(srp0_v[0]) if srp0_v[0] != -1.0 else 'N/A'}")
-            col.label(text=f"{int(srp0_v[1]) if srp0_v[1] != -1.0 else 'N/A'}")
-            col.label(text=f"{int(srp0_v[2]) if srp0_v[2] != -1.0 else 'N/A'}")
+            col.operator("lodify.select",text = "LOD0" if minsizes[0] == -1.0 else f"LOD0 ({minsizes[0]:.01f})").lod_level = 0
+            col.label(text=f"{srp0[0] if srp0[0] != -1.0 else 'N/A'}")
+            col.label(text=f"{srp0[1] if srp0[1] != -1.0 else 'N/A'}")
+            col.label(text=f"{srp0[2] if srp0[2] != -1.0 else 'N/A'}")
 
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD1" if minsizes_v[1] == -1.0 else f"LOD1 ({minsizes_v[1]:.01f})").lod_level = 1
-            col.label(text=f"{int(srp1_v[0]) if srp1_v[0] != -1.0 else 'N/A'}")
-            col.label(text=f"{int(srp1_v[1]) if srp1_v[1] != -1.0 else 'N/A'}")
-            col.label(text=f"{int(srp1_v[2]) if srp1_v[2] != -1.0 else 'N/A'}")
+            col.operator("lodify.select",text = "LOD1" if minsizes[1] == -1.0 else f"LOD1 ({minsizes[1]:.01f})").lod_level = 1
+            col.label(text=f"{srp1[0] if srp1[0] != -1.0 else 'N/A'}")
+            col.label(text=f"{srp1[1] if srp1[1] != -1.0 else 'N/A'}")
+            col.label(text=f"{srp1[2] if srp1[2] != -1.0 else 'N/A'}")
 
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD2" if minsizes_v[2] == -1.0 else f"LOD2 ({minsizes_v[2]:.01f})").lod_level = 2
-            col.label(text=f"{int(srp2_v[0]) if srp2_v[0] != -1.0 else 'N/A'}")
-            col.label(text=f"{int(srp2_v[1]) if srp2_v[1] != -1.0 else 'N/A'}")
-            col.label(text=f"{int(srp2_v[2]) if srp2_v[2] != -1.0 else 'N/A'}")
+            col.operator("lodify.select",text = "LOD2" if minsizes[2] == -1.0 else f"LOD2 ({minsizes[2]:.01f})").lod_level = 2
+            col.label(text=f"{srp2[0] if srp2[0] != -1.0 else 'N/A'}")
+            col.label(text=f"{srp2[1] if srp2[1] != -1.0 else 'N/A'}")
+            col.label(text=f"{srp2[2] if srp2[2] != -1.0 else 'N/A'}")
 
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD3" if minsizes_v[3] == -1.0 else f"LOD3 ({minsizes_v[3]:.01f})").lod_level = 3
-            col.label(text=f"{int(srp3_v[0]) if srp3_v[0] != -1.0 else 'N/A'}")
-            col.label(text=f"{int(srp3_v[1]) if srp3_v[1] != -1.0 else 'N/A'}")
-            col.label(text=f"{int(srp3_v[2]) if srp3_v[2] != -1.0 else 'N/A'}")
+            col.operator("lodify.select",text = "LOD3" if minsizes[3] == -1.0 else f"LOD3 ({minsizes[3]:.01f})").lod_level = 3
+            col.label(text=f"{srp3[0] if srp3[0] != -1.0 else 'N/A'}")
+            col.label(text=f"{srp3[1] if srp3[1] != -1.0 else 'N/A'}")
+            col.label(text=f"{srp3[2] if srp3[2] != -1.0 else 'N/A'}")
         else:
             row = col.row()
             row.alignment = 'CENTER'

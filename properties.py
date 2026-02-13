@@ -19,6 +19,13 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         default=True
     )
     
+    collision_boxes_to_lod0_only: BoolProperty(
+        name="collision boxes to lod0 only",
+        description="Calculate collision boxes for lod0 only",
+        default=True
+    )
+
+
     manual_lod_values: StringProperty(
         name="Manual LOD Values",
         description="Comma-separated LOD values (e.g., '12,3,2,1') for manual override. Only used when automatic calculation is disabled",
@@ -353,7 +360,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         name="LOD minsizes calculation method",
         description="Choose the method for calculating minSizes",
         items=[
-            ('NATIVE', "Native", "Use the addon's formula based in size"),
+            ('NATIVE', "Native - size based", "Use the addon's formula based in size"),
             ('SDK TABLE', "SDK Table", "Lookup the table according by the vertices count and LOD quality")
         ],
         default='SDK TABLE'

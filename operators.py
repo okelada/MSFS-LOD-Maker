@@ -45,18 +45,65 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
         utils.remove_unused_shrinkwrap_targets()
 
         for i in [1, 2, 3]:
-            utils.remove_lod_collection(base_name,i)
+           utils.remove_lod_collection(base_name,i)
            
-        lod00_layer_collection = utils.find_layer_collection(base_collection,bpy.context.view_layer.layer_collection)
-        lod00_layer_collection.exclude = False
-        bpy.context.view_layer.active_layer_collection = lod00_layer_collection
-        
-        # utils.update_stats_report_and_minsizes(context,base_name)
-        # utils.get_lod_values(context, base_collection)
+        utils.make_collection_active(base_collection)
+        bpy.ops.msfs2024.reload_lod_groups()
+
+        #utils.update_stats_report_and_minsizes(context,base_name)
+        #utils.get_lod_values(context, base_collection)
         #self.report({'INFO'}, f"Generated {lod_list_str} for {size_description} object ({object_size:.2f}m). Method: {method_description}. Vertex Colors: {vertex_color_mode}. MSFS LOD values: {optimal_lod_values}")
         return {'FINISHED'}
 
+class LODIFY_OT_add_collision_boxes(bpy.types.Operator):
+    bl_idname = "lodify.add_collision_boxes"
+    bl_label = "Add collision boxes to objects"
+    bl_options = {'REGISTER', 'UNDO'}
 
+    def execute(self, context):
+        scn = context.scene
+        base_collection,parent_collection = utils.find_base_collection()
+        
+        if not base_collection:
+            self.report({'ERROR'}, "Base LOD collection (ending with _LODNN) not selected, click on a collection ending with _LODNN  in the outliner")
+            return {'CANCELLED'}
+
+        base_name = utils.get_root_name_from_ID(base_collection)
+        
+        if not base_name:
+            self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
+            return {'CANCELLED'}
+            
+        print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
+        
+        utils.add_collision_boxes_to_generated_objects(scn.lod.collision_boxes_to_lod0_only)
+
+        return {'FINISHED'}
+
+class LODIFY_OT_remove_collision_boxes(bpy.types.Operator):
+    bl_idname = "lodify.remove_collision_boxes"
+    bl_label = "Remove collision boxes from objects"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        scn = context.scene
+        base_collection,parent_collection = utils.find_base_collection()
+        
+        if not base_collection:
+            self.report({'ERROR'}, "Base LOD collection (ending with _LODNN) not selected, click on a collection ending with _LODNN  in the outliner")
+            return {'CANCELLED'}
+
+        base_name = utils.get_root_name_from_ID(base_collection)
+        
+        if not base_name:
+            self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
+            return {'CANCELLED'}
+            
+        print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
+        
+        utils.remove_collision_boxes_to_generated_objects()
+        utils.make_collection_active(base_collection)
+        return {'FINISHED'}
 
 class LODIFY_OT_select(bpy.types.Operator):
     bl_idname = "lodify.select"
@@ -351,6 +398,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         #print(f"=== Setting Optimal LOD Values After Generation ===")
         try:
             # Use the optimal lod values
+
+
             lod_values_set = utils.set_msfs_multi_exporter_lod_values(self.base_collection, optimal_lod_values)
             print(f"Successfully called set_default_lod_values operator")
         except Exception as e:
@@ -552,10 +601,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             for child_target in target_collection.children:
                 utils.lodify_name(child_target,lod_level)
                 self.process_objects(child_target, lod_level, scn, context)
-
-
-
-
 
     
     def process_lod03_from_lod02(self,target_collection, scn, context):
@@ -866,7 +911,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             self.add_triangulate_faces(proxy, lod_level)
        
         #print(f"    Successfully created individual LOD{lod_level:02d} cube proxy '{proxy.name}' for mesh '{original_obj.name}'")
-        
         # Return the proxy object for further processing
         return proxy
 
@@ -1037,16 +1081,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 bright_contrast.location = (300, 0)
                 bright_contrast.inputs['Bright'].default_value = brightness_val   # High brightness boost
                 bright_contrast.inputs['Contrast'].default_value = contrast_val  # Reduce contrast to prevent clipping
-                
-                # Add ColorRamp for aggressive brightness curve
-                # colorramp_node = nodes.new(type='ShaderNodeValToRGB')
-                # colorramp_node.location = (100, 0)
-                # # Set up an aggressive brightening curve
-                # colorramp_node.color_ramp.elements[0].position = 0.0
-                # colorramp_node.color_ramp.elements[0].color = (0.4, 0.4, 0.4, 1.0)  # Lift blacks significantly
-                # colorramp_node.color_ramp.elements[1].position = 1.0
-                # colorramp_node.color_ramp.elements[1].color = (1.5, 1.5, 1.5, 1.0)  # Boost whites beyond 1.0
-                
+
                 # Connect: Texture -> ColorRamp -> Gamma -> Bright/Contrast -> BSDF -> Output
                 # links.new(tex_image_node.outputs['Color'], colorramp_node.inputs['Fac'])
                 # links.new(colorramp_node.outputs['Color'], gamma_node.inputs['Color'])
@@ -1065,9 +1100,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             # if bsdf_node.inputs[1].is_linked:
             #     links.remove(bsdf_node.inputs[1].links[0])
             # bsdf_node.inputs[1].default_value = 0.0
-
             # bsdf_node.inputs[27].default_value = 1.0 #emit strength
-
 
             # Assign material to object
             obj.data.materials.append(bake_material)
@@ -1087,13 +1120,12 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             # Step 5: Configure bake settings and bake
             # Set bake type to Diffuse
             bpy.context.scene.cycles.bake_type = 'DIFFUSE'
-            #bpy.context.scene.cycles.bake_type = 'EMIT'
+            #bpy.context.scene.cycles.bake_type = 'EMIT' #behaves the same for the most part
             
             # Configure influence settings
             bpy.context.scene.render.bake.use_pass_direct = False
             bpy.context.scene.render.bake.use_pass_indirect = False
             bpy.context.scene.render.bake.use_pass_color = True
-            
             # Set output to vertex colors
             bpy.context.scene.render.bake.target = 'VERTEX_COLORS'
             
@@ -1108,12 +1140,10 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             # Clean up: remove the temporary material
             obj.data.materials.clear()
             bpy.data.materials.remove(bake_material)
-            
         except Exception as e:
             print(f"    Warning: Vertex color baking failed for {obj.name}: {str(e)}")
             # Fallback to white vertex colors
             self.create_white_vertex_colors(obj)
-        
         finally:
             # Restore original state
             try:
@@ -1203,9 +1233,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             
             # Apply the modifier
             bpy.ops.object.modifier_apply(modifier=data_transfer.name)
-            
             #print(f"    Successfully transferred vertex colors using Data Transfer modifier")
-            
             return True
             
         except Exception as e:
@@ -1271,9 +1299,7 @@ class LODIFY_OT_set_default_lod_values(bpy.types.Operator):
         
         print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
-        # Always use default values: 4, 3, 2, 1
-        
-        
+        # Always use default values
         print(f"Setting default LOD values: {utils.default_lod_values}")
         
         # Set LOD values in MSFS Multi-Export addon
@@ -1307,18 +1333,10 @@ class LODIFY_OT_calculate_msfs_lod_values(bpy.types.Operator):
         
         print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
-        #utils.reform_all_object_names()#test only
-        # Use optimal LOD values based on object size and MSFS recommendations
-        #object_size = utils.calculate_ID_bounds(base_collection)
-        optimal_lod_values,object_size = utils.get_lod_values(context, base_collection)
-        
-        #print(f"Object size: {object_size:.2f}m")
-        #print(f"Using optimal LOD values: {optimal_lod_values} (auto-set to default values)")
-        
         # Set LOD values in MSFS Multi-Export addon
-        lod_values_set = utils.set_msfs_multi_exporter_lod_values(base_collection, optimal_lod_values)
+        lod_values_set = utils.set_msfs_multi_exporter_lod_values(base_collection, None)
         if lod_values_set:
-            self.report({'INFO'}, f"Set default MSFS LOD values: {optimal_lod_values}")
+            self.report({'INFO'}, f"Set calculated MSFS LOD values")
         else:
             self.report({'WARNING'}, "Could not set MSFS Multi-Export LOD values. Make sure the addon is enabled.")
         
@@ -1329,9 +1347,7 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
     bl_label = "Apply LOD Modifiers"
     bl_description = "Apply all modifiers on objects in the specified LOD collection"
     bl_options = {'REGISTER', 'UNDO'}
-    # base_collection = None
-    # parent_collection = None
-    # base_name  = ""
+
     
     lod_index: bpy.props.IntProperty(
         name="LOD Index",
@@ -1393,7 +1409,9 @@ classes = (
     LODIFY_OT_set_default_lod_values,
     LODIFY_OT_calculate_msfs_lod_values,
     LODIFY_OT_apply_lod_modifiers,
-    LODIFY_OT_select
+    LODIFY_OT_select,
+    LODIFY_OT_add_collision_boxes,
+    LODIFY_OT_remove_collision_boxes
    # LODIFY_props_list
 )
 
