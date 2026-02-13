@@ -6,7 +6,7 @@ I've adapted Devinci's code to my workflow
 ### Changes from main fork:
 
 - **Selection mode**
-  - Now there has to be a collection with name ending '\_LOD0N' (N being 0,1,2,3) ***selected in the outliner*** (highlighted row)
+  - Now there has to be a collection with name ending with '\_LOD0N' (N being 0,1,2,3) ***selected in the outliner*** (highlighted row)
     or being the ***active layer*** (highlighted collection icon), alternatively any child ID will select its upstream lod collection,
     as long as both their names properly end with '\_LOD0N'. 
   - The selected lod0 collection will always be shown in the 'Generate Lods' button's caption.<br>
@@ -22,13 +22,13 @@ I've adapted Devinci's code to my workflow
   - A 'Cleanup' button has been added, this will remove all generated lods but lod0.
 - **Generation** 
   - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
-  - Exporting Asobo gizmos (collision boxes) and lights is supported.<br>
+  - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
     >___Note that Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___
 
     >___Asobo gizmos are unstable and sometimes make my Blender 4.2 crash when toggling 'exclusion from view layer' after moving from layout workspace to modeling or vice-versa.___
     
   - Minsizes can be calculated as per SDK published curves.
-  - Minsizes can be per collection or per object.
+  - Minsizes can be assigned per collection or per object, depending on the multi-exporter mode.
   - <span style="color:red">**Warning:** </span>___your lod0 children will be renamed, both nested collections and objects.___<br>
     - Their names will be appended '\_LOD00'.<br>
     - Dot characters will be transformed to underscores.<br>
@@ -41,14 +41,14 @@ I've adapted Devinci's code to my workflow
   if everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>Resetting multi-exporter filters might help.
   In general it's easier to work in 'collections' mode with your lod collections being direct children of the scene.___
   - An optional token can be inserted in the middle of the children's names, to help the multi-exporter recognize lod groups.<br> To revert this insertion, it must be manually removed from lod0 names.
-  - Ability to add/remove collision boxes to all objects. Some of them might be redundant and should be manually removed.For now it's not possible to add collision boxes per collection with the multi-exporter. 
+  - Ability to add/remove collision boxes to all objects. Some of them might be redundant and should be manually removed.
 
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one.
   - Shrinkwrap will be post-processed via planar, collapse or subdivide decimation.
   - Triangulation after shrinkwrap available to deal with non-planar faces.
   - The problem with shrinkwrap results having too dark vertex colors has been partially fixed, so some brightening capabilities have been removed.
-  - A "just cubes" nuclear option method has been added mainly for testing purposes.
+  - A "just cubes" method has been added mainly for testing purposes.
 
 <br>
 
