@@ -3,12 +3,13 @@
 ## Unofficial fork of Devinci's great MSFS LOD Maker Blender Addon
 I've adapted Devinci's code to my workflow
 
-- **Selection mode has changed**
+### Changes from main fork:
+
+- **Selection mode**
   - Now there has to be a collection with name ending '\_LOD0N' (N being 0,1,2,3) ***selected in the outliner*** (highlighted row)
     or being the ***active layer*** (highlighted collection icon), alternatively any child ID will select its upstream lod collection,
     as long as both their names properly end with '\_LOD0N'. 
   - The selected lod0 collection will always be shown in the 'Generate Lods' button's caption.<br>
-    >___Note that the requirement that a base lod0 collection with name suffix '\_LOD00' must exist, stands.___
 
 - **Panels** 
   - Generation parameters are now published almost exhaustively.
@@ -28,7 +29,7 @@ I've adapted Devinci's code to my workflow
     
   - Minsizes can be calculated as per SDK published curves.
   - Minsizes can be per collection or per object.
-  - <span style="color:red">**Warning:** </span>___your lod0 children will be renamed, both nested collections and objects___<br>
+  - <span style="color:red">**Warning:** </span>___your lod0 children will be renamed, both nested collections and objects.___<br>
     - Their names will be appended '\_LOD00'.<br>
     - Dot characters will be transformed to underscores.<br>
     - '\_NNN\_' can be inserted in some objects' names if the lodified name already exists somewhere else in the blendfile.<br>
@@ -40,6 +41,7 @@ I've adapted Devinci's code to my workflow
   if everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>Resetting multi-exporter filters might help.
   In general it's easier to work in 'collections' mode with your lod collections being direct children of the scene.___
   - An optional token can be inserted in the middle of the children's names, to help the multi-exporter recognize lod groups.<br> To revert this insertion, it must be manually removed from lod0 names.
+  - Ability to add/remove collision boxes to all objects. Some of them might be redundant and should be manually removed.For now it's not possible to add collision boxes per collection with the multi-exporter. 
 
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one.
@@ -50,7 +52,7 @@ I've adapted Devinci's code to my workflow
 
 <br>
 
-  Current status: heavy development, unstable.
+  Current status: beta.
 
 <p>
  Tested with Blender 4.2 and MSFS 2024 SDK 1.5.7<br>
