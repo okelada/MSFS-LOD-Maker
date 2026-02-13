@@ -1,7 +1,7 @@
 # MSFS LOD Maker Blender Addon
 
 ## Unofficial fork of Devinci's great MSFS LOD Maker Blender Addon
-I've adapted Devinci's code to my workflow
+I've adapted Devinci's code to my workflow and preferences
 
 ### Changes from main fork:
 
@@ -20,6 +20,7 @@ I've adapted Devinci's code to my workflow
 
     >___Excluded content might not show up in the multi-exporter if 'visible_only' is active.___
   - A 'Cleanup' button has been added, this will remove all generated lods but lod0.
+
 - **Generation** 
   - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
   - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
@@ -38,10 +39,10 @@ I've adapted Devinci's code to my workflow
     This should enable the multi-exporter to work in both 'Collections' or 'Objects' mode.<br>
     
     >___Note that even if this addon supports nested IDs, the multi-exporter can have a hard time to group them properly.<br>
-  if everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>Resetting multi-exporter filters might help.
-  In general it's easier to work in 'collections' mode with your lod collections being direct children of the scene.___
-  - An optional token can be inserted in the middle of the children's names, to help the multi-exporter recognize lod groups.<br> To revert this insertion, it must be manually removed from lod0 names.
-  - Ability to add/remove collision boxes to all objects. Some of them might be redundant and should be manually removed.
+    In general it's easier to work in 'collections' mode with your lod collections being direct children of the scene.<br>
+    Resetting multi-exporter filters might help. If everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>___
+  - An optional token can be inserted in the middle of the children's names, to help the multi-exporter recognize your lod groups.
+  - Ability to add/remove collision boxes to all objects or collections containing objects with one click. If nested, some of them might be redundant and should be manually removed.
 
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one.
