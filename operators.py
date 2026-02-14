@@ -73,9 +73,9 @@ class LODIFY_OT_add_collision_boxes(bpy.types.Operator):
         print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
         if scn.lod.collision_boxes_target == 'COLLECTIONS':
-            utils.add_collision_boxes_to_generated_collections(scn.lod.collision_boxes_to_lod0_only)
+            utils.add_collision_boxes_to_generated_collections(base_name,scn.lod.collision_boxes_to_lod0_only)
         else:
-            utils.add_collision_boxes_to_generated_objects(scn.lod.collision_boxes_to_lod0_only)
+            utils.add_collision_boxes_to_generated_objects(base_name,scn.lod.collision_boxes_to_lod0_only)
 
         return {'FINISHED'}
 
@@ -100,8 +100,8 @@ class LODIFY_OT_remove_collision_boxes(bpy.types.Operator):
             
         print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
-        utils.remove_collision_boxes_to_generated_objects()
-        utils.make_collection_active(base_collection)
+        utils.remove_collision_boxes_to_generated_objects(base_name)
+        utils.make_collection_active(base_name)
         return {'FINISHED'}
 
 class LODIFY_OT_select(bpy.types.Operator):
@@ -357,11 +357,11 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         utils.update_stats_report_and_minsizes(context,self.base_name)
         # Use optimal LOD values based on object size and MSFS recommendations        
         #object_size = utils.calculate_ID_bounds(self.base_collection)
-        optimal_lod_values,object_size = utils.get_lod_values(context, self.base_collection)
+        #optimal_lod_values,object_size = utils.get_lod_values(context, self.base_collection)
         #print(f"Object size: {object_size:.2f}m")
         #print(f"Using optimal LOD values: {optimal_lod_values} (auto-set to default values)")
          # Final report with object size and LOD values information
-        size_description = "very small" if object_size < 1.0 else "small" if object_size < 5.0 else "medium" if object_size < 20.0 else "large" if object_size < 100.0 else "very large"
+        #size_description = "very small" if object_size < 1.0 else "small" if object_size < 5.0 else "medium" if object_size < 20.0 else "large" if object_size < 100.0 else "very large"
         # Activate MSFS Multi-Export settings after LOD operation completion
         # moved above lod setting because it can reset some things in groups
         try:
@@ -386,7 +386,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         #print(f"=== Setting Optimal LOD Values After Generation ===")
         try:
             # Use the optimal lod values
-            lod_values_set = utils.set_msfs_multi_exporter_lod_values(self.base_collection, optimal_lod_values)
+            utils.set_msfs_multi_exporter_lod_values(self.base_collection)
             print(f"Successfully called set_default_lod_values operator")
         except Exception as e:
             print(f"ERROR: Failed to call set_default_lod_values operator: {str(e)}")
@@ -408,7 +408,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         wm.progress =  100.0
         wm.progress_update(wm.progress)
 
-        self.report({'INFO'}, f"Generated {lod_list_str} for {size_description} object ({object_size:.2f}m). Vertex Colors: {vertex_color_mode}. MSFS LOD values: {optimal_lod_values}")
+        #self.report({'INFO'}, f"Generated {lod_list_str} for {size_description} object ({object_size:.2f}m). Vertex Colors: {vertex_color_mode}. MSFS LOD values: {optimal_lod_values}")
+        self.report({'INFO'}, f"Generated {lod_list_str}  Vertex Colors: {vertex_color_mode}")
         return {'FINISHED'}
 
 
@@ -1348,7 +1349,7 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
             return {'CANCELLED'}
         
         collection = lod_item.ui_lod_collection    
-        
+        utils.make_collection_active(collection)
         applied_count,error_count = utils.apply_modifiers(context,collection)
 
         if applied_count > 0:

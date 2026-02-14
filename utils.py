@@ -1,9 +1,16 @@
 
 import bpy
 import re
+import inspect
 from collections import defaultdict
 from bisect import bisect_left
 from mathutils import Vector
+
+class LODIFY_list:
+    ui_lod_collection = None
+    ui_lod_level = -1
+
+
 
 def make_collection_active(collection):
     layer_collection = find_layer_collection(collection,bpy.context.view_layer.layer_collection)
@@ -18,9 +25,24 @@ def make_collection_active(collection):
         return True
     return False
 
-def remove_collision_boxes_to_generated_objects():
-    lod_list = list(get_generated_lod_list())
-    
+
+def get_some_lod_list(base_name):   
+    lod_list = []
+
+    for i in range(4):
+        lod_coll_name = f"{base_name}_LOD{i:02d}"
+        lod_coll = bpy.data.collections.get(lod_coll_name)
+        if lod_coll:
+            lod = LODIFY_list()
+            lod.ui_lod_collection = lod_coll
+            lod.ui_lod_level = i
+            lod_list.append(lod)
+
+    return lod_list
+
+def remove_collision_boxes_to_generated_objects(base_name):
+    #lod_list = list(get_generated_lod_list())
+    lod_list = get_some_lod_list(base_name)
     for lod in lod_list:
         coll = lod.ui_lod_collection
         if coll:#CHECKME
@@ -30,16 +52,26 @@ def remove_collision_boxes_to_generated_objects():
             for child in children_objects_flat:
                 if child.type == 'MESH':
                     for child_child in  child.children:
-                        if child_child.type == 'EMPTY' and child_child.msfs_gizmo_type == 'box':
-                            old_gizmo_objects_flat.append(child_child)
-    
+                        if is_asobo_gizmo(child_child):
+                                old_gizmo_objects_flat.append(child_child)
             for gizmo in old_gizmo_objects_flat:
                 bpy.data.objects.remove(gizmo,do_unlink=True,do_id_user=True,do_ui_user=True)
-                        
 
 
-def add_collision_boxes_to_generated_collections(lod0Only):
-    lod_list = list(get_generated_lod_list())
+
+def is_asobo_gizmo(obj):
+    if obj.type == 'EMPTY' and obj.name.startswith("Collision_Box_"):
+        doc = bpy.ops.msfs2024.add_gizmo._get_doc()
+        if "msfs_gizmo_type" in doc and  obj.msfs_gizmo_type == 'box':
+            return True
+        elif obj.original.display_bounds_type == 'BOX': #SU5 SDK > 1.6.4
+            return True
+    return False
+
+
+def add_collision_boxes_to_generated_collections(base_name,lod0Only):
+    #lod_list = list(get_generated_lod_list())
+    lod_list = get_some_lod_list(base_name)
     bpy.ops.object.select_all(action='DESELECT')
 
     for lod in lod_list:
@@ -49,7 +81,7 @@ def add_collision_boxes_to_generated_collections(lod0Only):
         make_collection_active(coll)
 
         for child_obj in list(coll.all_objects):
-            if child_obj.type == 'EMPTY' and child_obj.msfs_gizmo_type == 'box':
+            if is_asobo_gizmo(child_obj):
                 bpy.data.objects.remove(child_obj,do_unlink=True,do_id_user=True,do_ui_user=True)
         children_collections_flat = [coll] + list(coll.children_recursive)
         
@@ -61,8 +93,13 @@ def add_collision_boxes_to_generated_collections(lod0Only):
             for child_obj in c.all_objects:
                 if child_obj.type == 'MESH':
                     child_obj.select_set(True)
-                    bpy.context.view_layer.objects.active = child_obj        
-                    bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box')
+                    bpy.context.view_layer.objects.active = child_obj
+                    doc = bpy.ops.msfs2024.add_gizmo._get_doc()
+                    if "msfs_gizmo_type" in doc:
+                        bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box')
+                    else:
+                        bpy.ops.msfs2024.add_gizmo(gizmo_type = 'BOX') #SU5 SDK > 1.6.4
+              
                     gizmo =  bpy.context.view_layer.objects.active
                     gizmo.name = "Collision_Box_" + c.name
                     gizmo.location = Vector(position)
@@ -70,8 +107,9 @@ def add_collision_boxes_to_generated_collections(lod0Only):
                     break
 
 
-def add_collision_boxes_to_generated_objects(lod0Only):
-    lod_list = list(get_generated_lod_list())
+def add_collision_boxes_to_generated_objects(base_name,lod0Only):
+    #lod_list = list(get_generated_lod_list())
+    lod_list = get_some_lod_list(base_name)
     bpy.ops.object.select_all(action='DESELECT')
 
     for lod in lod_list:
@@ -84,12 +122,14 @@ def add_collision_boxes_to_generated_objects(lod0Only):
         for child in children_objects_flat:
             if child.type == 'MESH':
                 for child_child in  child.children:
-                    if child_child.type == 'EMPTY' and child_child.msfs_gizmo_type == 'box':
+                    #if child_child.type == 'EMPTY' and child_child.original.display_bounds_type == 'BOX' and child_child.name.startswith("Collision_Box_"):
+                    if child_child.type == 'EMPTY' and child_child.msfs_gizmo_type == 'box' and child_child.name.startswith("Collision_Box_"):
                         gizmo_objects_flat.append(child_child)
 
                 child.select_set(True)
                 bpy.context.view_layer.objects.active = child        
-                bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box')
+                bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box') 
+                #bpy.ops.msfs2024.add_gizmo(gizmo_type = 'BOX')
                 bpy.context.view_layer.objects.active.name = "Collision_Box_" + child.name
         for gizmo in gizmo_objects_flat:
             bpy.data.objects.remove(gizmo,do_unlink=True,do_id_user=True,do_ui_user=True)
@@ -141,6 +181,8 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
                 if msfs_lod_group.lods[0].collection is None:
                     if msfs_lod_group.lods[0].objectLOD is None:
                         print(f"Ignoring LOD group: '{msfs_lod_group.name}' , empty")
+                        if hasattr(msfs_lod_group, 'enabled'):
+                            msfs_lod_group.enabled = False
                         continue
                     else:
                         linked_id = msfs_lod_group.lods[0].objectLOD
@@ -149,6 +191,8 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
 
                 if not is_ID_collection_child(linked_id,base_collection):
                     print(f"Ignoring LOD group: '{msfs_lod_group.name}' , not our Lod")
+                    if hasattr(msfs_lod_group, 'enabled'):
+                        msfs_lod_group.enabled = False
                     continue
             
             if forced_lod_values is None:
@@ -178,18 +222,19 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
                     #lod_base_collection_name = root_name + f"_LOD{i:02d}"
                     if value != -1.0 and i < len(msfs_lod_group.lods) and hasattr(msfs_lod_group.lods[i], 'lod_value'):
                         msfs_lod_group.lods[i].lod_value = value
-                        new_value = getattr(msfs_lod_group.lods[i], 'lod_value', 0.0) 
+                        new_value = getattr(msfs_lod_group.lods[i], 'lod_value', 0.0)
                         # Verify the value was set correctly
                         if abs(new_value - value) > 0.001:
                             print(f"WARNING: LOD{i} value not set correctly! Expected {value}, got {new_value}")
+                        msfs_lod_group.lods[i].enabled = True
                     else:
                         print(f"WARNING: LOD{i} entry missing or no lod_value attribute")
                     i += 1
                 # Force an update of the UI
-                # try:
-                #     bpy.context.area.tag_redraw()
-                # except:
-                #     pass
+                try:
+                    bpy.context.area.tag_redraw()
+                except:
+                    pass
                 
                 #Final verification
                 print(f"=== Final LOD Values ===")

@@ -16,7 +16,7 @@ I've adapted Devinci's code to my workflow and preferences
   - Both decimation methods and parameters are now adjustable per lod level.
   - There is a results view with the generated vertices and polygons totals.
   - Lod level collections visibility (exclusion from view layer) can be managed from the results view.
-    >___Lod2 and lod3 are stripped of materials and in Blender, they must be visualized in solid shading mode with attributes as color.___
+    >___Lod2 and lod3 are stripped of materials and in Blender, they must be visualized in solid shading mode with attributes as color. You are expected too use one and only one baked material whith these,  so that colors make sense.___
 
     >___Excluded content might not show up in the multi-exporter if 'visible_only' is active.___
   - A 'Cleanup' button has been added, this will remove all generated lods but lod0.
@@ -25,8 +25,6 @@ I've adapted Devinci's code to my workflow and preferences
   - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
   - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
     >___Note that Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___
-
-    >___Asobo gizmos are unstable and sometimes make my Blender 4.2 crash when toggling 'exclusion from view layer' after moving from layout workspace to modeling or vice-versa.___
     
   - Minsizes can be calculated as per SDK published curves.
   - Minsizes can be assigned per collection or per object, depending on the multi-exporter mode.
@@ -42,7 +40,7 @@ I've adapted Devinci's code to my workflow and preferences
     In general it's easier to work in 'collections' mode with your lod collections being direct children of the scene.<br>
     Resetting multi-exporter filters might help. If everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>___
   - An optional token can be inserted in the middle of the children's names, to help the multi-exporter recognize your lod groups.
-  - Ability to add/remove collision boxes to all objects or collections containing objects with one click. If nested, some of them might be redundant and should be manually removed.
+  - Ability to add/remove simple collision boxes to all objects or collections containing objects with one click. You can add your own ones to model irregular shapes. In that case make sure their name doesn't start with "Collision_Box" or they could be removed from the UI.<br>___Only SU4/SDK < 1.5.7 for now. Asobo gizmos have just been rewritten in SU5 (SDK > 164).___
 
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one.
@@ -56,7 +54,7 @@ I've adapted Devinci's code to my workflow and preferences
   Current status: beta.
 
 <p>
- Tested with Blender 4.2 and MSFS 2024 SDK 1.5.7<br>
+ Tested with Blender 4.2 and MSFS 2024 SDK 1.5.7, some functionality (collision boxes) is temporarily lost as of SU5/SDK 1.6.4<br>
  Contains code taken from blender.stackexchange.com, stackoverflow.com and blenderartists.org<br>
  Some statements of the original README below might no longer apply.<br><br><br>
 
