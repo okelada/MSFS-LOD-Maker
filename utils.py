@@ -1,15 +1,54 @@
 
 import bpy
 import re
-import inspect
 from collections import defaultdict
 from bisect import bisect_left
 from mathutils import Vector
+import addon_utils
 
 class LODIFY_list:
     ui_lod_collection = None
     ui_lod_level = -1
 
+
+def get_lod_list(base_collection):
+    base_name = get_root_name_from_ID(base_collection)
+    return get_named_lod_list(base_name)
+
+def get_named_lod_list(base_name):   
+    lod_list = []
+    for i in range(4):
+        lod_coll_name = f"{base_name}_LOD{i:02d}"
+        lod_coll = bpy.data.collections.get(lod_coll_name)
+        if lod_coll:
+            lod = LODIFY_list()
+            lod.ui_lod_collection = lod_coll
+            lod.ui_lod_level = i
+            lod_list.append(lod)
+    return lod_list
+
+def get_generated_lod_list(base_name = None):   
+    lod_list = bpy.context.window_manager.lod_list
+    if base_name: #load selected on the fly
+        new_lod_list = get_named_lod_list(base_name)
+        lod_list.clear()
+        for new_lod in new_lod_list:    
+            item = lod_list.add()
+            item.ui_lod_collection = new_lod.ui_lod_collection
+            item.ui_lod_level = new_lod.ui_lod_level
+    return lod_list
+
+
+#io_scene_gltf2_msfs_2024
+def list_all_addon_modules():
+    modules = addon_utils.modules()
+    for module in modules:
+        module_name = module.__name__
+        bl_info_name = getattr(module, "bl_info", {}).get("name", "Unknown Name")
+        bl_info_version = getattr(module, "bl_info", {}).get("version", "0.0.0")
+        is_enabled = addon_utils.check(module_name)[1]
+        status = "Enabled" if is_enabled else "Disabled"
+        print(f"{module_name}: {bl_info_name} {bl_info_version} — {status}")
 
 
 def make_collection_active(collection):
@@ -26,23 +65,8 @@ def make_collection_active(collection):
     return False
 
 
-def get_some_lod_list(base_name):   
-    lod_list = []
-
-    for i in range(4):
-        lod_coll_name = f"{base_name}_LOD{i:02d}"
-        lod_coll = bpy.data.collections.get(lod_coll_name)
-        if lod_coll:
-            lod = LODIFY_list()
-            lod.ui_lod_collection = lod_coll
-            lod.ui_lod_level = i
-            lod_list.append(lod)
-
-    return lod_list
-
 def remove_collision_boxes_to_generated_objects(base_name):
-    #lod_list = list(get_generated_lod_list())
-    lod_list = get_some_lod_list(base_name)
+    lod_list = get_named_lod_list(base_name)
     for lod in lod_list:
         coll = lod.ui_lod_collection
         if coll:#CHECKME
@@ -58,7 +82,6 @@ def remove_collision_boxes_to_generated_objects(base_name):
                 bpy.data.objects.remove(gizmo,do_unlink=True,do_id_user=True,do_ui_user=True)
 
 
-
 def is_asobo_gizmo(obj):
     if obj.type == 'EMPTY' and obj.name.startswith("Collision_Box_"):
         doc = bpy.ops.msfs2024.add_gizmo._get_doc()
@@ -70,8 +93,7 @@ def is_asobo_gizmo(obj):
 
 
 def add_collision_boxes_to_generated_collections(base_name,lod0Only):
-    #lod_list = list(get_generated_lod_list())
-    lod_list = get_some_lod_list(base_name)
+    lod_list = get_named_lod_list(base_name)
     bpy.ops.object.select_all(action='DESELECT')
 
     for lod in lod_list:
@@ -84,12 +106,10 @@ def add_collision_boxes_to_generated_collections(base_name,lod0Only):
             if is_asobo_gizmo(child_obj):
                 bpy.data.objects.remove(child_obj,do_unlink=True,do_id_user=True,do_ui_user=True)
         children_collections_flat = [coll] + list(coll.children_recursive)
-        
         for c in children_collections_flat:
             if len(c.objects) == 0:
                 continue
             position,sizes = calculate_ID_bounds(c)
-
             for child_obj in c.all_objects:
                 if child_obj.type == 'MESH':
                     child_obj.select_set(True)
@@ -99,7 +119,6 @@ def add_collision_boxes_to_generated_collections(base_name,lod0Only):
                         bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box')
                     else:
                         bpy.ops.msfs2024.add_gizmo(gizmo_type = 'BOX') #SU5 SDK > 1.6.4
-              
                     gizmo =  bpy.context.view_layer.objects.active
                     gizmo.name = "Collision_Box_" + c.name
                     gizmo.location = Vector(position)
@@ -108,8 +127,7 @@ def add_collision_boxes_to_generated_collections(base_name,lod0Only):
 
 
 def add_collision_boxes_to_generated_objects(base_name,lod0Only):
-    #lod_list = list(get_generated_lod_list())
-    lod_list = get_some_lod_list(base_name)
+    lod_list = get_named_lod_list(base_name)
     bpy.ops.object.select_all(action='DESELECT')
 
     for lod in lod_list:
@@ -123,9 +141,9 @@ def add_collision_boxes_to_generated_objects(base_name,lod0Only):
             if child.type == 'MESH':
                 for child_child in  child.children:
                     #if child_child.type == 'EMPTY' and child_child.original.display_bounds_type == 'BOX' and child_child.name.startswith("Collision_Box_"):
-                    if child_child.type == 'EMPTY' and child_child.msfs_gizmo_type == 'box' and child_child.name.startswith("Collision_Box_"):
+                    #if child_child.type == 'EMPTY' and child_child.msfs_gizmo_type == 'box' and child_child.name.startswith("Collision_Box_"):
+                    if is_asobo_gizmo(child_child):
                         gizmo_objects_flat.append(child_child)
-
                 child.select_set(True)
                 bpy.context.view_layer.objects.active = child        
                 bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box') 
@@ -140,7 +158,6 @@ def add_collision_boxes_to_generated_objects(base_name,lod0Only):
 def is_ID_collection_child(_id,base_collection):
     children_collections_flat = list(base_collection.children_recursive)
     children_objects_flat = list(base_collection.all_objects)
-
     if type(_id) is bpy.types.Collection and _id in children_collections_flat:
         return True    
     if type(_id) is bpy.types.Object and _id in children_objects_flat:
@@ -155,7 +172,6 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
         base_collection_name: Name of the base collection (without _LOD00 suffix)
         lod_values: List of 4 LOD values to set
     """
-    
     try:
         print(f"=== Setting MSFS LOD Values ===")
         # Check if MSFS Multi-Export addon is available
@@ -246,7 +262,7 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
             else:
                 print(f"Warning: LOD group doesn't have 'lods' attribute - MSFS Multi-Export version mismatch")
                 return False
-        
+        bpy.ops.msfs2024.reload_lod_groups() #1.6.4 compat
         print(f"Successfully set MSFS LOD values for '{base_root_name}' and children")
         return True
         
@@ -284,9 +300,7 @@ def merge_vertices_by_distance(obj, context,lod_level):
     print(f"    Merged vertices by distance ({merge_threshold}m) for {obj.name}")
 
 
-def get_generated_lod_list():
-    return bpy.context.scene.lod.lod_list
-    #return bpy.types.WindowManager.lod_list
+
 
 def get_parents_of_id(id):
     collections_in_scene = [c for c in bpy.data.collections if bpy.context.scene.user_of_id(c)]

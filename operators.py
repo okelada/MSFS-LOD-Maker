@@ -9,21 +9,18 @@
 # - Automatic LOD value calculation for MSFS Multi-Export addon
 
 import bpy
-from bpy.props import IntProperty,FloatProperty
+
+from bpy.props import IntProperty,FloatProperty,CollectionProperty,PointerProperty
 import re
 import bmesh
 from mathutils import Vector
 import math
 from . import utils
 
-
-
-
-
-
 class LODIFY_OT_cleanup(bpy.types.Operator):
     bl_idname = "lodify.cleanup"
     bl_label = "Cleanup generated lods"
+    bl_description = "Cleanup generated lods"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -35,13 +32,6 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
             return {'CANCELLED'}
 
         base_name = utils.get_root_name_from_ID(base_collection)
-        
-        if not base_name:
-            self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
-            return {'CANCELLED'}
-            
-        print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
-        
         utils.remove_unused_shrinkwrap_targets()
 
         for i in [1, 2, 3]:
@@ -54,6 +44,7 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
 class LODIFY_OT_add_collision_boxes(bpy.types.Operator):
     bl_idname = "lodify.add_collision_boxes"
     bl_label = "Add collision boxes to objects"
+    bl_description = "Add collision boxes to lod objects/collections"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -65,12 +56,6 @@ class LODIFY_OT_add_collision_boxes(bpy.types.Operator):
             return {'CANCELLED'}
 
         base_name = utils.get_root_name_from_ID(base_collection)
-        
-        if not base_name:
-            self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
-            return {'CANCELLED'}
-            
-        print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
         if scn.lod.collision_boxes_target == 'COLLECTIONS':
             utils.add_collision_boxes_to_generated_collections(base_name,scn.lod.collision_boxes_to_lod0_only)
@@ -82,10 +67,11 @@ class LODIFY_OT_add_collision_boxes(bpy.types.Operator):
 class LODIFY_OT_remove_collision_boxes(bpy.types.Operator):
     bl_idname = "lodify.remove_collision_boxes"
     bl_label = "Remove collision boxes from objects"
+    bl_description = "Remove collision boxes from lod objects/collections"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        scn = context.scene
+        #scn = context.scene
         base_collection,parent_collection = utils.find_base_collection()
         
         if not base_collection:
@@ -93,12 +79,6 @@ class LODIFY_OT_remove_collision_boxes(bpy.types.Operator):
             return {'CANCELLED'}
 
         base_name = utils.get_root_name_from_ID(base_collection)
-        
-        if not base_name:
-            self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
-            return {'CANCELLED'}
-            
-        print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
         
         utils.remove_collision_boxes_to_generated_objects(base_name)
         utils.make_collection_active(base_name)
@@ -112,7 +92,7 @@ class LODIFY_OT_select(bpy.types.Operator):
     lod_level: IntProperty(default=0)
 
     def execute(self, context):
-        scn = context.scene
+        #scn = context.scene
         base_collection,parent_collection = utils.find_base_collection()
         
         if not base_collection:
@@ -120,19 +100,13 @@ class LODIFY_OT_select(bpy.types.Operator):
             return {'CANCELLED'}
 
         base_name = utils.get_root_name_from_ID(base_collection)
-        
-        if not base_name:
-            self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
-            return {'CANCELLED'}
-        
         active_lod_layer_collection = None
 
         if self.lod_level != -1:
             selected_coll = bpy.data.collections.get(f"{base_name}_LOD{self.lod_level:02d}")
-            
             if selected_coll: 
                 active_lod_layer_collection = None
-                for lod_collection in utils.get_generated_lod_list():
+                for lod_collection in utils.get_generated_lod_list(base_name):
                     lod_layer_collection = utils.find_layer_collection(lod_collection.ui_lod_collection,bpy.context.view_layer.layer_collection)
                     if lod_layer_collection:
                         is_excluded = not lod_layer_collection.collection.name.endswith(f"_LOD{self.lod_level:02d}")
@@ -145,7 +119,7 @@ class LODIFY_OT_select(bpy.types.Operator):
                 if active_lod_layer_collection:
                     bpy.context.view_layer.active_layer_collection = active_lod_layer_collection              
         else:
-            for lod_collection in utils.get_generated_lod_list():
+            for lod_collection in utils.get_generated_lod_list(base_name):
                 lod_layer_collection = utils.find_layer_collection(lod_collection.ui_lod_collection,bpy.context.view_layer.layer_collection)
                 if lod_layer_collection:
                     lod_layer_collection.exclude = False
@@ -243,7 +217,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         item.ui_lod_level = 0
 
         base_lod03_collection = self.base_collection
-     
         wm.progress_update(wm.progress)
         # Process LODs in order to ensure LOD02 exists before LOD03
         # First pass: LOD01 and LOD02
@@ -251,7 +224,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             lod_name = f"{self.base_name}_LOD{i:02d}"
             print(f"Looking for/creating LOD collection: '{lod_name}'")
             lod_collection = bpy.data.collections.get(lod_name)
-            
             if lod_collection:
                 print(f"  Found existing collection: '{lod_name}'")
                 #include in view layer if needed, otherwise process might fail if objects already exist
@@ -260,10 +232,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     layer_lod_collection.exclude = False
                 # Clear existing objects in the collection
                 self.clear_collection(lod_collection)
-            
             # Set color tag for LOD collection
             color_tag = f'COLOR_0{i+1}'
-            
             # Copy collection structure from base collection
             lod_collection = utils.duplicate_collection(lod_collection, self.parent_collection,self.base_collection)
             lod_collection.color_tag = color_tag
@@ -280,12 +250,9 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             item = utils.get_generated_lod_list().add()
             item.ui_lod_collection = lod_collection
             item.ui_lod_level = i
-            # if i == 3:
-            #     item.ui_dsp = True
             
             print(f"  Generating LOD{i:02d}")
             self.process_objects( lod_collection, i, scn, context)
-            
             processed_objects += base_mesh_count
             wm.progress =  math.ceil((processed_objects / total_objects) * 100)
             try:
@@ -293,13 +260,10 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             except:
                 pass  # Fallback for older Blender versions
             wm.progress_update(wm.progress)
-
-    
         if 3 in lods_to_generate:
             print(f"=== Processing LOD03 ===")
             lod03_name = f"{self.base_name}_LOD03"
             lod03_collection = bpy.data.collections.get(lod03_name)
-            
             if lod03_collection:
                 print(f"  Found existing collection: '{lod03_name}'")
                 #include in view layer if needed, otherwise process might fail if objects already exist
@@ -309,10 +273,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     layer_lod_collection.exclude = False
                 # Clear existing objects in the collection
                 self.clear_collection(lod03_collection)
-            
             # Copy collection structure from base collection for LOD03
             lod03_collection = utils.duplicate_collection(lod03_collection, self.parent_collection, base_lod03_collection) 
-            
             # Set color tag for LOD03 collection
             lod03_collection.color_tag = 'COLOR_04'
             lod03_collection.name = f"{self.base_name}_LOD03"
@@ -326,16 +288,13 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             item.ui_lod_collection = lod03_collection
             item.ui_lod_level = 3
             #item.ui_dsp = True
-            
             # Process LOD03 from LOD02
             print(f"  Generating LOD03")# using decimate"
             self.process_objects( lod03_collection, 3, scn, context)
-
             processed_objects += base_mesh_count
             wm.progress =  min(95,math.ceil((processed_objects / total_objects) * 100))
             #scn.lod.wm.progress =  80.0
             wm.progress_update(wm.progress)
-
         #auto apply modifiers option
         if scn.lod.auto_apply_modifiers:
             for i in range(len(lods_to_generate)):
@@ -355,15 +314,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         
         utils.reform_object_names()
         utils.update_stats_report_and_minsizes(context,self.base_name)
-        # Use optimal LOD values based on object size and MSFS recommendations        
-        #object_size = utils.calculate_ID_bounds(self.base_collection)
-        #optimal_lod_values,object_size = utils.get_lod_values(context, self.base_collection)
-        #print(f"Object size: {object_size:.2f}m")
-        #print(f"Using optimal LOD values: {optimal_lod_values} (auto-set to default values)")
-         # Final report with object size and LOD values information
-        #size_description = "very small" if object_size < 1.0 else "small" if object_size < 5.0 else "medium" if object_size < 20.0 else "large" if object_size < 100.0 else "very large"
-        # Activate MSFS Multi-Export settings after LOD operation completion
-        # moved above lod setting because it can reset some things in groups
+
         try:
             bpy.ops.msfs2024.reload_lod_groups()
             # Enable our LOD group
@@ -380,10 +331,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 
         except Exception as e:
             print(f"Warning: Could not activate MSFS Multi-Export settings: {str(e)}")
-            # Don't fail the operation if these settings can't be applied
-            
+            # Don't fail the operation if these settings can't be applied  
         # Set LOD values using the calculated optimal values AFTER LOD generation is completed
-        #print(f"=== Setting Optimal LOD Values After Generation ===")
         try:
             # Use the optimal lod values
             utils.set_msfs_multi_exporter_lod_values(self.base_collection)
@@ -400,15 +349,12 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             print("Forced scene and UI update")
         except Exception as e:
             print(f"Could not force scene update: {str(e)}")
-        
         # Create LOD list string for the report 
         vertex_color_mode = scn.lod.vertex_color_mode
         lod_list_str = ", ".join([f"LOD{i:02d}" for i in lods_to_generate])
         wm.progress_end()
         wm.progress =  100.0
         wm.progress_update(wm.progress)
-
-        #self.report({'INFO'}, f"Generated {lod_list_str} for {size_description} object ({object_size:.2f}m). Vertex Colors: {vertex_color_mode}. MSFS LOD values: {optimal_lod_values}")
         self.report({'INFO'}, f"Generated {lod_list_str}  Vertex Colors: {vertex_color_mode}")
         return {'FINISHED'}
 
@@ -443,7 +389,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         # Ensure the object has vertex colors with correct attribute name
         if not obj.data.color_attributes:
             obj.data.color_attributes.new(name="Color", type='FLOAT_COLOR', domain='CORNER')
-        
         # Set Color as the active color attribute
         color_attr = obj.data.color_attributes.get("Color")
         if color_attr:
@@ -467,7 +412,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             collection.objects.unlink(obj)
             if obj.users == 0:
                 bpy.data.objects.remove(obj, do_unlink=True)
-        
         # Clear child collections recursively
         for child in list(collection.children):
             self.clear_collection(child)
@@ -507,8 +451,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         dimensions = obj.dimensions
         max_dimension = max(dimensions.x, dimensions.y, dimensions.z)
         return max_dimension < threshold
-    
-
 
     def swap_original_by_proxy(self,proxy,original_obj,target_collection):  
         orig_name = original_obj.name
@@ -572,7 +514,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             for original_obj in shrinkwrapped_proxies:
                 if shrinkwrapped_proxies[original_obj]:
                     self.swap_original_by_proxy(shrinkwrapped_proxies[original_obj],original_obj,target_collection)
-
             # Process child collections
             for child_target in target_collection.children:
                 utils.lodify_name(child_target,lod_level)
@@ -816,7 +757,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         if not just_cubes:
             # Enter edit mode, delete bottom face, and apply subdivisions
             bpy.ops.object.mode_set(mode='EDIT')
-            
             # Delete the bottom face of the cube (typically not visible and improves performance)
             bpy.ops.mesh.select_all(action='DESELECT')
 
@@ -832,7 +772,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     if avg_z < min_z:
                         min_z = avg_z
                         bottom_face = face
-                
                 if bottom_face:
                     bottom_face.select = True
                     bpy.ops.mesh.delete(type='FACE')
@@ -845,7 +784,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             
             bpy.ops.object.mode_set(mode='OBJECT')
             print(f"    Applied {subdivisions} subdivision levels to cube proxy")
-            
             # Add shrinkwrap modifier using appropriate target
             shrinkwrap = proxy.modifiers.new(name="LOD_Shrinkwrap", type='SHRINKWRAP')
             shrinkwrap.target = original_obj
@@ -950,7 +888,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                             if prefix in node.image.name.upper():
                                 #print(f"Found ALBEDO node texture by name pattern '{node.image.name}' in material '{material.name}' (Strategy 2)")
                                 return node.image
-        
         # Strategy 3: Search all loaded images for ALBEDO texture matching the base name
         base_name = utils.get_root_name_from_ID(base_collection)
         if base_name:
@@ -960,7 +897,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                         if prefix in node.image.name.upper():
                             #print(f"Found ALBEDO texture by global search '{image.name}' (Strategy 3)")
                             return image
-        
         # Strategy 4: Look for any image texture in the materials (fallback)
         for mat_slot in lod00_obj.material_slots:
             material = mat_slot.material
@@ -1091,7 +1027,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             # Set bake type to Diffuse
             bpy.context.scene.cycles.bake_type = 'DIFFUSE'
             #bpy.context.scene.cycles.bake_type = 'EMIT' #behaves the same for the most part
-            
             # Configure influence settings
             bpy.context.scene.render.bake.use_pass_direct = False
             bpy.context.scene.render.bake.use_pass_indirect = False
@@ -1261,14 +1196,6 @@ class LODIFY_OT_set_default_lod_values(bpy.types.Operator):
             self.report({'ERROR'}, "Base LOD collection (ending with _LODNN) not selected, click on a collection ending with _LODNN  in the outliner")
             return {'CANCELLED'}
         
-        base_name = utils.get_root_name_from_ID(base_collection)
-        
-        if not base_name:
-            self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
-            return {'CANCELLED'}
-        
-        print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
-        
         # Always use default values
         print(f"Setting default LOD values: {utils.default_lod_values}")
         
@@ -1294,15 +1221,7 @@ class LODIFY_OT_calculate_msfs_lod_values(bpy.types.Operator):
         if not base_collection:
             self.report({'ERROR'}, "Base LOD collection (ending with _LOD00) not selected, click on a collection ending with _LOD00  in the outliner")
             return {'CANCELLED'}
-        
-        base_name = utils.get_root_name_from_ID(base_collection)
-        
-        if not base_name:
-            self.report({'ERROR'}, f"Could not extract base name from collection '{base_collection.name}'")
-            return {'CANCELLED'}
-        
-        print(f"Base collection: '{base_collection.name}' -> Base name: '{base_name}'")
-        
+
         # Set LOD values in MSFS Multi-Export addon
         lod_values_set = utils.set_msfs_multi_exporter_lod_values(base_collection, None)
         if lod_values_set:
@@ -1337,12 +1256,12 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
         base_name = utils.get_root_name_from_ID(base_collection)
 
         # Check if the index is valid
-        if self.lod_index >= len(utils.get_generated_lod_list()):
+        if self.lod_index >= len(utils.get_generated_lod_list(base_name)):#CHECKME
             self.report({'ERROR'}, f"Invalid LOD index: {self.lod_index}")
             return {'CANCELLED'}
         
             # Get the LOD item and collection
-        lod_item = utils.get_generated_lod_list()[self.lod_index]
+        lod_item = utils.get_generated_lod_list(base_name)[self.lod_index]#CHECKME
 
         if not lod_item.ui_lod_collection:
             self.report({'ERROR'}, f"No collection assigned to LOD index {self.lod_index}")
@@ -1361,11 +1280,12 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
         if applied_count == 0 and error_count == 0:
             self.report({'INFO'}, f"No objects with modifiers found in '{collection.name}'")
         
-        # utils.update_stats_report_and_minsizes(context,base_name)
-        # utils.get_lod_values(context, base_collection)
-
         return {'FINISHED'}
-    
+
+class LODIFY_props_list(bpy.types.PropertyGroup):
+    """Property group for individual LOD collection items."""
+    ui_lod_collection: PointerProperty(type=bpy.types.Collection, description='Level of Detail collection')
+    ui_lod_level: IntProperty(description='UI LOD level')
 
 classes = (
     LODIFY_OT_generate_lod_decimate,
@@ -1375,8 +1295,8 @@ classes = (
     LODIFY_OT_apply_lod_modifiers,
     LODIFY_OT_select,
     LODIFY_OT_add_collision_boxes,
-    LODIFY_OT_remove_collision_boxes
-   # LODIFY_props_list
+    LODIFY_OT_remove_collision_boxes,
+    LODIFY_props_list
 )
 
 
@@ -1387,13 +1307,7 @@ def register():
             bpy.utils.register_class(cls)
         except ValueError as e:
             print(f"Warning: Operator class {cls.__name__} registration issue: {e}")
-
-    # bpy.types.WindowManager.stats_report_LOD00 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
-    # bpy.types.WindowManager.stats_report_LOD01 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
-    # bpy.types.WindowManager.stats_report_LOD02 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
-    # bpy.types.WindowManager.stats_report_LOD03 = bpy.props.FloatVectorProperty(size = 3,default=(-1.0,-1.0,-1.0))
-    # bpy.types.WindowManager.stats_report_minsizes = bpy.props.FloatVectorProperty(size = 4,default=(-1.0,-1.0,-1.0,-1.0))
-    # bpy.types.WindowManager.lod_list = CollectionProperty(type=LODIFY_props_list)
+    bpy.types.WindowManager.lod_list = CollectionProperty(type=LODIFY_props_list)
     bpy.types.WindowManager.progress =  FloatProperty( default=0.0, min=0.0, max=100.0, subtype='PERCENTAGE')
 
 def unregister():

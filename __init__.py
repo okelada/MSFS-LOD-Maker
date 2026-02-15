@@ -21,41 +21,38 @@ from . import properties
 bl_info = {
     "name": "MSFS LOD Maker",
     "description": "Microsoft Flight Simulator LOD system for collections in Blender 3.6+, with intelligent LOD generation and automatic MSFS optimization",
-    "author": "Devinci (inspired by DB3D's Lodify addon)",
+    "author": "Devinci (inspired by DB3D's Lodify addon) / modified by okelada",
     "version": (0, 2, 0),
     "blender": (3, 6, 0),  # Updated to support Blender 3.6+ (including 4.x)
     "location": "Properties > Scene > Level of Detail Collections",
     "warning": "",
-    "doc_url": "https://github.com/Devinci297/MSFS-LOD-Maker/blob/main/README.md",
-    "tracker_url": "https://github.com/Devinci297/MSFS-LOD-Maker/issues",
+    "doc_url": "https://github.com/okelada/MSFS-LOD-Maker/blob/devel/README.md",
+    "tracker_url": "https://github.com/okelada/MSFS-LOD-Maker/issues",
     "category": "Scene"
 }
 
 @persistent
 def load_handler(dummy):
-        pass
-        # base_collection,parent_collection = utils.find_base_collection()
-        # if base_collection:
-        #     utils.update_stats_report(bpy.context,utils.get_base_name_from_collection(base_collection))
+    #utils.list_all_addon_modules()
+    pass
 
-
-def setup_logging():
-    """Setup logging for the addon with improved error handling."""
-    try:
-        logging.basicConfig(
-            filename='lodify_addon.log', 
-            level=logging.DEBUG, 
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            filemode='w'  # Overwrite log file each time
-        )
-        logging.info("MSFS LOD Maker addon logging initialized")
-    except Exception as e:
-        print(f"Warning: Could not setup logging: {str(e)}")
+# def setup_logging():
+#     """Setup logging for the addon with improved error handling."""
+#     try:
+#         logging.basicConfig(
+#             filename='lodify_addon.log', 
+#             level=logging.DEBUG, 
+#             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+#             filemode='w'  # Overwrite log file each time
+#         )
+#         logging.info("MSFS LOD Maker addon logging initialized")
+#     except Exception as e:
+#         print(f"Warning: Could not setup logging: {str(e)}")
 
 
 def register():
     """Register the addon with improved error handling."""
-    setup_logging()
+    #setup_logging()
     try:
         properties.register()
         operators.register()
@@ -69,7 +66,6 @@ def register():
         except:
             pass
         raise
-
     bpy.app.handlers.load_post.append(load_handler)
 
 

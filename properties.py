@@ -1,17 +1,11 @@
 # properties.py
 
 import bpy
-from bpy.props import FloatProperty, IntProperty, BoolProperty, PointerProperty, StringProperty, EnumProperty,CollectionProperty
-
-class LODIFY_props_list(bpy.types.PropertyGroup):
-    """Property group for individual LOD collection items."""
-    ui_lod_collection: PointerProperty(type=bpy.types.Collection, description='Level of Detail collection')
-    ui_lod_level: IntProperty(description='UI LOD level')
-
+from bpy.props import FloatProperty, IntProperty, BoolProperty, PointerProperty, StringProperty, EnumProperty
 
 class LODIFY_props_scn(bpy.types.PropertyGroup):
     """Main property group for LOD system settings."""
-    lod_list: CollectionProperty(type=LODIFY_props_list)
+
     # MSFS LOD Optimization Settings
     use_automatic_lod_calculation: BoolProperty(
         name="Use Automatic LOD Calculation",
@@ -34,8 +28,6 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         ],
         default='COLLECTIONS'
     )
-
-
 
     manual_lod_values: StringProperty(
         name="Manual LOD Values",
@@ -74,18 +66,6 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         default=True
     )
 
-    # lodify_children_names: BoolProperty(
-    #     name="lodify children names", 
-    #     description="Append _LODXX to children ids' names",
-    #     default=True
-    # )
-
-    # lodify_leave_lod0_alone: BoolProperty(
-    #     name="lodify leave lod0 alone", 
-    #     description="Leave lod0 and children's names alone",
-    #     default=True
-    # )
-    
     # LOD Selection Settings
     generate_lod01: BoolProperty(
         name="Generate LOD01",
@@ -390,8 +370,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
     )
 
 classes = (
-    LODIFY_props_list,
-    LODIFY_props_scn
+    LODIFY_props_scn,
 )
 
 def register():
@@ -401,7 +380,6 @@ def register():
             bpy.utils.register_class(cls)
         except ValueError as e:
             print(f"Warning: Class {cls.__name__} registration issue: {e}")
-
     # Register the main scene property
     bpy.types.Scene.lod = PointerProperty(type=LODIFY_props_scn)
 
@@ -410,7 +388,6 @@ def unregister():
     # Remove scene property first
     if hasattr(bpy.types.Scene, "lod"):
         del bpy.types.Scene.lod
-        
     # Unregister classes in reverse order
     for cls in reversed(classes):
         try:
