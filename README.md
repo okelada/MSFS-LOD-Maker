@@ -3,13 +3,13 @@
 ## Unofficial fork of Devinci's great MSFS LOD Maker Blender Addon
 I've adapted Devinci's code to my workflow and preferences
 
-### Changes from main fork:
+### Changes from original fork:
 
 - **Selection mode**
   - Now there has to be a collection with name ending with '\_LOD0N' (N being 0,1,2,3) ***selected in the outliner*** (highlighted row)
-    or being the ***active layer*** (highlighted collection icon), alternatively any child ID will select its upstream lod collection,
-    as long as both their names properly end with '\_LOD0N'. 
-  - The selected lod0 collection will always be shown in the 'Generate Lods' button's caption.<br>
+    or being the ***active layer*** (highlighted collection icon), alternatively any child ID of the lod stack will select its upstream lod collection,
+    as long as their names are properly suffixed. 
+  - The selected lod0 collection will always be shown in the 'Generate Lods' button's caption.<br>Only one lod stack can be active at a time.
 
 - **Panels** 
   - Generation parameters are now published almost exhaustively.
@@ -22,9 +22,9 @@ I've adapted Devinci's code to my workflow and preferences
   - A 'Cleanup' button has been added, this will remove all generated lods but lod0.
 
 - **Generation** 
-  - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner. This removes some limitations regarding nesting and parenting.
+  - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner.
   - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
-    >___Note that Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___
+    >___Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___
     
   - Minsizes can be calculated as per SDK published curves.
   - Minsizes can be assigned per collection or per object, depending on the multi-exporter mode.
@@ -36,11 +36,10 @@ I've adapted Devinci's code to my workflow and preferences
 
     This should enable the multi-exporter to work in both 'Collections' or 'Objects' mode.<br>
     
-    >___Note that even if this addon supports nested IDs, the multi-exporter can have a hard time to group them properly.<br>
-    In general it's easier to work in 'collections' mode with your lod collections being direct children of the scene.<br>
-    Resetting multi-exporter filters might help. If everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>___
+
   - An optional token can be inserted in the middle of the children's names, to help the multi-exporter recognize your lod groups.
-  - Ability to add/remove simple collision boxes to all objects or collections containing objects with one click. You can add your own ones to model irregular shapes. In that case make sure their name doesn't start with "Collision_Box" or they could be removed from the UI.<br>___Only SU4/SDK < 1.5.7 for now. Asobo gizmos have just been rewritten in SU5 (SDK > 164).___
+    >___Even if this addon supports nested IDs, the multi-exporter can have a hard time to group them properly.<br>If everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>___
+  - Ability to add/remove simple collision boxes to all objects or collections containing objects with one click. You can add your own ones to model irregular shapes. In that case make sure their name doesn't start with "Collision_Box" or they could be deleted by the addon.<br>___Only SU4/SDK <= 1.5.7 for now. Asobo gizmos have just been rewritten from scratch and are unusable as of SU5 beta (SDK 1.6.4).___
 
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one.
@@ -54,7 +53,8 @@ I've adapted Devinci's code to my workflow and preferences
   Current status: beta.
 
 <p>
- Tested with Blender 4.2 and MSFS 2024 SDK 1.5.7, some functionality (collision boxes) is temporarily lost as of SU5/SDK 1.6.4<br>
+ Tested with Blender 4.2 and MSFS 2024 SU4 / SDK 1.5.7<br>
+ Basic Blender 3.6 testing done.<br>
  Contains code taken from blender.stackexchange.com, stackoverflow.com and blenderartists.org<br>
  Some statements of the original README below might no longer apply.<br><br><br>
 
