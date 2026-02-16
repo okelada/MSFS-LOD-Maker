@@ -23,6 +23,7 @@ I've adapted Devinci's code to my workflow and preferences
 
 - **Generation** 
   - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner.
+  - Already generated lods are persistent, if unchecked they will be frozen until cleaned up. It facilitates manual edition.
   - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
     >___Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___
     
@@ -46,7 +47,7 @@ I've adapted Devinci's code to my workflow and preferences
   - Shrinkwrap will be post-processed via planar, collapse or subdivide decimation.
   - Triangulation after shrinkwrap available to deal with non-planar faces.
   - The problem with shrinkwrap results having too dark vertex colors has been partially fixed, so some brightening capabilities have been removed.
-  - A "just cubes" method has been added mainly for testing purposes.
+  - A "just cubes" nuclear option method that has been added to generate a lod3 with few vertices. Useful when one FS object is composed of several blender objects.
 
 <br>
 

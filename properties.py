@@ -69,7 +69,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
     # LOD Selection Settings
     generate_lod01: BoolProperty(
         name="Generate LOD01",
-        description="Generate LOD01 level",
+        description="Generate or freeze LOD01 level",
         default=True
     )
 
@@ -158,7 +158,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
     #LOD2
     generate_lod02: BoolProperty(
         name="Generate LOD02", 
-        description="Generate LOD02 level",
+        description="Generate or freeze LOD02 level",
         default=True
     )
     
@@ -247,7 +247,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
     #LOD3
     generate_lod03: BoolProperty(
         name="Generate LOD03",
-        description="Generate LOD03 level", 
+        description="Generate or freeze LOD03 level", 
         default=True
     )
 

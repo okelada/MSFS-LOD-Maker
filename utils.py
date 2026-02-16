@@ -316,12 +316,13 @@ def find_base_collection(strict = False):
     regions = [region for region in areas[0].regions if region.type == 'WINDOW']
 
     #try with the outliner selected one
-    with bpy.context.temp_override(area=areas[0], region=regions[0], screen=scr):
-        if len(bpy.context.selected_ids) > 0:
-            if type(bpy.context.selected_ids[0]) == bpy.types.Collection:
-                selected_collection = bpy.context.selected_ids[0]
-            elif type(bpy.context.selected_ids[0]) == bpy.types.Object:
-                selected_collection =  bpy.context.selected_ids[0].users_collection[0]
+    if hasattr(bpy.context,'selected_ids'):
+        with bpy.context.temp_override(area=areas[0], region=regions[0], screen=scr):
+            if len(bpy.context.selected_ids) > 0:
+                if type(bpy.context.selected_ids[0]) == bpy.types.Collection:
+                    selected_collection = bpy.context.selected_ids[0]
+                elif type(bpy.context.selected_ids[0]) == bpy.types.Object:
+                    selected_collection =  bpy.context.selected_ids[0].users_collection[0]
 
     if not selected_collection:
         if bpy.context.active_object:
@@ -371,7 +372,6 @@ def reform_object_names():
         lod_collection = lod.ui_lod_collection
         lod_level = lod.ui_lod_level
         lod_level_list.append(lod_level)
-
         children_objects_flat = list(lod_collection.all_objects)
         children_objects_flat.sort(key=lambda obj: obj.name)
         children_objects_flat_list.append(children_objects_flat)
@@ -379,37 +379,39 @@ def reform_object_names():
     num_lod_levels = len(lod_level_list)
     lod0_children_objects_flat = children_objects_flat_list[0]
     num_children_objects = len(lod0_children_objects_flat)
-
     troubled_name_collections = {}
+
     for i in range(num_children_objects):     
         o_names = []
         needs_reform = False
-        for l in range(num_lod_levels):
-            o = children_objects_flat_list[l][i]
+        for j in range(num_lod_levels):
+            o = children_objects_flat_list[j][i]
             o_names.append(o.name)
-            if not o.name.endswith(f"_LOD{l:02d}"):
+            level = lod_level_list[j]
+            if not o.name.endswith(f"_LOD{level:02d}"):
                 needs_reform = True  
-                #print(f"obj l{l}:{i} {o.name} needs reform")
+                print(f"obj l{level}:{i} {o.name} needs reform")
         if needs_reform:
-            troubled_name_collections[(i,l)] = o_names
+            troubled_name_collections[(i,j)] = o_names
     
     for k in troubled_name_collections:
         names = troubled_name_collections[k]
-        i,l = k
+        i,j = k
         root_name = get_root_name(names[0])
         tries = 0
         while tries < 99:     
             name_is_free = True
             tries += 1
-            for ll in range(4):
-                #n = get_root_name(nn)
+            for ll in lod_level_list:
                 new_name = root_name +f"_{tries:03d}_LOD{ll:02d}"
-                if new_name in bpy.data.objects or new_name in bpy.data.collections:
+                if new_name in bpy.data.objects or new_name in bpy.data.collections:#look everywhere
                     name_is_free = False
                     break
             if name_is_free:
-                for ll in range(4):
-                    new_name = root_name + f"_{tries:03d}_LOD{ll:02d}"
+                for ll in range(num_lod_levels):
+                    level = lod_level_list[ll]
+                    new_name = root_name + f"_{tries:03d}_LOD{level:02d}"
+                    print(f"reform {children_objects_flat_list[ll][i].name} -> {new_name}")
                     children_objects_flat_list[ll][i].name = new_name
                 break
 
@@ -429,12 +431,17 @@ def get_root_name(name):
     nn = nn.rstrip('_')
 
     #check if already lodified
-    lodpos = re.search(r"_LOD\d{2}",nn)
+    lodpos = re.search(r"_LOD\d{2}$",nn)
     if lodpos:
         nn = nn[0:lodpos.start()] #strip lod suffix for now
 
     if lodpos:
         nn = nn[0:lodpos.start()] #strip lod suffix for now
+
+    lodpos = re.search(r"_\d{3}$",nn)
+    while lodpos:
+        nn = nn[:-4]
+        lodpos = re.search(r"_\d{3}$",nn)
 
     return nn
 

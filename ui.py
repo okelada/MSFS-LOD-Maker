@@ -45,9 +45,9 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
         col.label(text="LOD Generation Method", icon='MODIFIER')
         # Create a row with checkboxes for LOD selection
         row = col.row(align=True)
-        row.prop(lod_props, "generate_lod01", text="LOD01")
-        row.prop(lod_props, "generate_lod02", text="LOD02") 
-        row.prop(lod_props, "generate_lod03", text="LOD03")
+        row.prop(lod_props, "generate_lod01", text="LOD01" if lod_props.generate_lod01 else "LOD01 (frozen)")
+        row.prop(lod_props, "generate_lod02", text="LOD02" if lod_props.generate_lod02 else "LOD02 (frozen)") 
+        row.prop(lod_props, "generate_lod03", text="LOD03" if lod_props.generate_lod03 else "LOD03 (frozen)")
         # Basic Settings
         col.separator()
         row = col.row(align=True)

@@ -161,8 +161,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
         #cleanup first
         utils.remove_unused_shrinkwrap_targets()
-        for i in [1, 2, 3]:
-            utils.remove_lod_collection(self.base_name,i)
+        # for i in [1, 2, 3]:
+        #     utils.remove_lod_collection(self.base_name,i)
 
         #layer_lod_collection = recurLayerCollection(bpy.context.view_layer.layer_collection,self.base_collection.name)
         layer_lod_collection = utils.find_layer_collection(self.base_collection,bpy.context.view_layer.layer_collection)
@@ -176,16 +176,21 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         
         if scn.lod.generate_lod01:
             lods_to_generate.append(1)
-        else:
             utils.remove_lod_collection(self.base_name,1)
+        # else:
+        #     utils.remove_lod_collection(self.base_name,1)
+
         if scn.lod.generate_lod02:
             lods_to_generate.append(2)
-        else:
             utils.remove_lod_collection(self.base_name,2)
+        # else:
+        #     utils.remove_lod_collection(self.base_name,2)
+
         if scn.lod.generate_lod03:
             lods_to_generate.append(3)
-        else:
             utils.remove_lod_collection(self.base_name,3)
+        # else:
+        #     utils.remove_lod_collection(self.base_name,3)
 
         if not lods_to_generate:
             self.report({'WARNING'}, "No LODs selected for generation. Please select at least one LOD level.")
