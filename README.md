@@ -16,20 +16,20 @@ I've adapted Devinci's code to my workflow and preferences
   - Both decimation methods and parameters are now adjustable per lod level.
   - There is a results view with the generated vertices and polygons totals.
   - Lod level collections visibility (exclusion from view layer) can be managed from the results view.
-    >___Lod2 and lod3 are stripped of materials and in Blender, they must be visualized in solid shading mode with attributes as color. You are expected too use one and only one baked material whith these,  so that colors make sense.___
+    >___Lod2 and lod3 are stripped of materials and in Blender, they must be visualized in solid shading mode with attributes as color. You are expected too use only one baked fs material, as vertex color will be baked from one material only.___
 
     >___Excluded content might not show up in the multi-exporter if 'visible_only' is active.___
-  - A 'Cleanup' button has been added, this will remove all generated lods but lod0.
+  - A 'Cleanup' function has been added, this will remove all generated lods but lod0.
 
 - **Generation** 
   - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner.
-  - Processing can be progressive (every new lod starting from its upstream predecessor), or default (every new lod starting from lod0)
-  - Already generated lods are persistent, if unchecked they will be frozen until cleaned up. It facilitates manual edition.
+  - Processing can be progressive (every new lod starting from its upstream predecessor), or default (every new lod starting from lod0).
+  - Lod3 is no longer treated differently from the others.
+  - Once generated, lods are persistent if unchecked. They will be frozen until cleaned up. It facilitates manual edition.
   - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
     >___Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___
     
-  - Minsizes can be calculated as per SDK published curves.
-  - Minsizes can be assigned per collection or per object, depending on the multi-exporter mode.
+  - Minsizes can be calculated as per SDK published curves. They will be assigned per collection or per object, depending on the multi-exporter mode.
   - <span style="color:red">**Warning:** </span>___your lod0 children will be renamed, both nested collections and objects.___<br>
     - Their names will be appended '\_LOD00'.<br>
     - Dot characters will be transformed to underscores.<br>
@@ -45,10 +45,10 @@ I've adapted Devinci's code to my workflow and preferences
 
 - **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one.
-  - Shrinkwrap will be post-processed via planar, collapse or subdivide decimation.
+  - Shrinkwrap will be post-processed in the same pass via planar, collapse or subdivide decimation.
   - Triangulation after shrinkwrap available to deal with non-planar faces.
   - The problem with shrinkwrap results having too dark vertex colors has been partially fixed, so some brightening capabilities have been removed.
-  - A "just cubes" nuclear option method that has been added to generate a lod3 with few vertices. Useful when one FS object is composed of several blender objects.
+  - A "just cubes" nuclear option method that has been added to generate a lod with few vertices. Specially useful to create a lod3 when one FS object is composed of several blender objects, as cubes should be easy to modify by hand to get a general shape.
 
 <br>
 
