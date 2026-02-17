@@ -168,8 +168,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
         #cleanup first
         utils.remove_unused_shrinkwrap_targets()
-        # for i in [1, 2, 3]:
-        #     utils.remove_lod_collection(self.base_name,i)
 
         #layer_lod_collection = recurLayerCollection(bpy.context.view_layer.layer_collection,self.base_collection.name)
         layer_lod_collection = utils.find_layer_collection(self.base_collection,bpy.context.view_layer.layer_collection)
@@ -184,20 +182,14 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         if scn.lod.generate_lod01:
             lods_to_generate.append(1)
             utils.remove_lod_collection(self.base_name,1)
-        # else:
-        #     utils.remove_lod_collection(self.base_name,1)
 
         if scn.lod.generate_lod02:
             lods_to_generate.append(2)
             utils.remove_lod_collection(self.base_name,2)
-        # else:
-        #     utils.remove_lod_collection(self.base_name,2)
 
         if scn.lod.generate_lod03:
             lods_to_generate.append(3)
             utils.remove_lod_collection(self.base_name,3)
-        # else:
-        #     utils.remove_lod_collection(self.base_name,3)
 
         if not lods_to_generate:
             self.report({'WARNING'}, "No LODs selected for generation. Please select at least one LOD level.")
@@ -231,7 +223,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         from_collection = self.base_collection
         wm.progress_update(wm.progress)
         # Process LODs in order
-        for i in [lod for lod in lods_to_generate]:# if lod != 3]:
+        for i in [lod for lod in lods_to_generate]:
             lod_name = f"{self.base_name}_LOD{i:02d}"
             print(f"Looking for/creating LOD collection: '{lod_name}'")
             lod_collection = bpy.data.collections.get(lod_name)
@@ -243,14 +235,13 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     layer_lod_collection.exclude = False
                 # Clear existing objects in the collection
                 self.clear_collection(lod_collection)
-            # Set color tag for LOD collection
-            color_tag = f'COLOR_0{i+1}'
+        
             # Copy collection structure from base collection
             lod_collection = utils.duplicate_collection(lod_collection, self.parent_collection,from_collection)
-            lod_collection.color_tag = color_tag
+            # Set color tag for LOD collection
+            lod_collection.color_tag = f'COLOR_0{i+1}'
             lod_collection.name = f"{self.base_name}_LOD{i:02d}"
     
-            #layer_lod_collection = recurLayerCollection(bpy.context.view_layer.layer_collection,lod_collection.name)
             layer_lod_collection = utils.find_layer_collection(lod_collection,bpy.context.view_layer.layer_collection)
             if layer_lod_collection:
                 layer_lod_collection.exclude = False
@@ -275,7 +266,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         if scn.lod.auto_apply_modifiers:
             for i in range(len(lods_to_generate)):
                 print(f"=== Auto applying modifiers  for lod {lods_to_generate[i]} ===")
-                #bpy.ops.lodify.apply_lod_modifiers(lod_index = i+1)
                 lod_name = f"{self.base_name}_LOD{lods_to_generate[i]:02d}"
                 lod_collection = bpy.data.collections.get(lod_name)
                 applied_count,error_count = utils.apply_modifiers(context,lod_collection)
@@ -307,7 +297,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 
         except Exception as e:
             print(f"Warning: Could not activate MSFS Multi-Export settings: {str(e)}")
-            # Don't fail the operation if these settings can't be applied  
+            # Don't fail the operation if these settings can't be applied 
+            
         # Set LOD values using the calculated optimal values AFTER LOD generation is completed
         try:
             # Use the optimal lod values

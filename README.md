@@ -23,6 +23,7 @@ I've adapted Devinci's code to my workflow and preferences
 
 - **Generation** 
   - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner.
+  - Processing can be progressive (every new lod starting from its upstream predecessor), or default (every new lod starting from lod0)
   - Already generated lods are persistent, if unchecked they will be frozen until cleaned up. It facilitates manual edition.
   - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
     >___Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___

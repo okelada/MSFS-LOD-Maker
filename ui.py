@@ -234,19 +234,19 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             col.label(text=f"{srp0[2] if srp0[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD1" if minsizes[1] == -1.0 else f"LOD1 ({minsizes[1]:.01f})   -{percent_reduction[1]:.0f}%").lod_level = 1
+            col.operator("lodify.select",text = "LOD1" if minsizes[1] == -1.0 else f"LOD1 ({minsizes[1]:.01f})   {-percent_reduction[1]:+.0f}%").lod_level = 1
             col.label(text=f"{srp1[0] if srp1[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp1[1] if srp1[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp1[2] if srp1[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD2" if minsizes[2] == -1.0 else f"LOD2 ({minsizes[2]:.01f})   -{percent_reduction[2]:.0f}%").lod_level = 2
+            col.operator("lodify.select",text = "LOD2" if minsizes[2] == -1.0 else f"LOD2 ({minsizes[2]:.01f})   {-percent_reduction[2]:+.0f}%").lod_level = 2
             col.label(text=f"{srp2[0] if srp2[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp2[1] if srp2[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp2[2] if srp2[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD3" if minsizes[3] == -1.0 else f"LOD3 ({minsizes[3]:.01f})   -{percent_reduction[3]:.0f}%").lod_level = 3
+            col.operator("lodify.select",text = "LOD3" if minsizes[3] == -1.0 else f"LOD3 ({minsizes[3]:.01f})   {-percent_reduction[3]:+.0f}%").lod_level = 3
             col.label(text=f"{srp3[0] if srp3[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp3[1] if srp3[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp3[2] if srp3[2] != -1.0 else 'N/A'}")
