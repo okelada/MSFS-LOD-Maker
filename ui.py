@@ -104,6 +104,9 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
             row.prop(lod_props, "auto_apply_modifiers", text="Auto apply modifiers")
             row = col.row(align=True)
             row.alignment = 'LEFT'
+            row.prop(lod_props, "progressive_mode", text="Progressive mode")
+            row = col.row(align=True)
+            row.alignment = 'LEFT'
             row.prop(lod_props, "vertex_color_mode", text="Vertex Colors")
             row = col.row(align=True)
             row.alignment = 'LEFT'
@@ -187,8 +190,10 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0)#3.6 compat
             row = col.row()
             row.scale_y = 1.5
-            button_text = "Cleanup - " +  (base_collection.name if base_collection else "no selection")
-            row.operator("lodify.cleanup", text = button_text, icon='TRASH')
+            button_text = "Cleanup unfrozen - " +  (base_collection.name if base_collection else "no selection")
+            row.operator("lodify.cleanup", text = button_text, icon='CANCEL').delete_frozen = False
+            button_text = "Cleanup All - " +  (base_collection.name if base_collection else "no selection")
+            row.operator("lodify.cleanup", text = button_text, icon='TRASH').delete_frozen = True
             col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0)#3.6 compat
             row = col.row()
             row.scale_y = 1.5
@@ -201,6 +206,18 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             srp1 = stats_report[1]
             srp2 = stats_report[2]
             srp3 = stats_report[3]
+            
+            vertex_counts = [srp0[0],srp1[0],srp2[0],srp3[0]]
+            percent_reduction = []
+            last_vertx_count = srp0[0]
+            for nvertx in vertex_counts:
+                if nvertx != -1:
+                    percent_reduction.append(100.0 *(last_vertx_count - nvertx)/last_vertx_count)
+                    last_vertx_count = nvertx
+                else:
+                    percent_reduction.append(0.0)
+
+
             col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0)#3.6 compat
             row = col.row()
             col = row.column()
@@ -217,19 +234,19 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             col.label(text=f"{srp0[2] if srp0[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD1" if minsizes[1] == -1.0 else f"LOD1 ({minsizes[1]:.01f})").lod_level = 1
+            col.operator("lodify.select",text = "LOD1" if minsizes[1] == -1.0 else f"LOD1 ({minsizes[1]:.01f})   -{percent_reduction[1]:.0f}%").lod_level = 1
             col.label(text=f"{srp1[0] if srp1[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp1[1] if srp1[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp1[2] if srp1[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD2" if minsizes[2] == -1.0 else f"LOD2 ({minsizes[2]:.01f})").lod_level = 2
+            col.operator("lodify.select",text = "LOD2" if minsizes[2] == -1.0 else f"LOD2 ({minsizes[2]:.01f})   -{percent_reduction[2]:.0f}%").lod_level = 2
             col.label(text=f"{srp2[0] if srp2[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp2[1] if srp2[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp2[2] if srp2[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            col.operator("lodify.select",text = "LOD3" if minsizes[3] == -1.0 else f"LOD3 ({minsizes[3]:.01f})").lod_level = 3
+            col.operator("lodify.select",text = "LOD3" if minsizes[3] == -1.0 else f"LOD3 ({minsizes[3]:.01f})   -{percent_reduction[3]:.0f}%").lod_level = 3
             col.label(text=f"{srp3[0] if srp3[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp3[1] if srp3[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp3[2] if srp3[2] != -1.0 else 'N/A'}")
