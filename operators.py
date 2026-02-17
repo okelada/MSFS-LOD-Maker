@@ -10,7 +10,7 @@
 
 import bpy
 
-from bpy.props import IntProperty,FloatProperty,CollectionProperty,PointerProperty
+from bpy.props import IntProperty,FloatProperty,CollectionProperty,PointerProperty,BoolProperty
 import re
 import bmesh
 from mathutils import Vector
@@ -20,8 +20,9 @@ from . import utils
 class LODIFY_OT_cleanup(bpy.types.Operator):
     bl_idname = "lodify.cleanup"
     bl_label = "Cleanup generated lods"
-    bl_description = "Cleanup generated lods"
+    #bl_description = "Cleanup generated lods"
     bl_options = {'REGISTER', 'UNDO'}
+    delete_frozen: BoolProperty(default=False)
 
     def execute(self, context):
         scn = context.scene
@@ -34,9 +35,14 @@ class LODIFY_OT_cleanup(bpy.types.Operator):
         base_name = utils.get_root_name_from_ID(base_collection)
         utils.remove_unused_shrinkwrap_targets()
 
-        for i in [1, 2, 3]:
-           utils.remove_lod_collection(base_name,i)
-           
+        
+        if self.delete_frozen or scn.lod.generate_lod01:
+            utils.remove_lod_collection(base_name,1)
+        if self.delete_frozen or scn.lod.generate_lod02:
+            utils.remove_lod_collection(base_name,2)
+        if self.delete_frozen or scn.lod.generate_lod03:
+            utils.remove_lod_collection(base_name,3)
+
         utils.make_collection_active(base_collection)
         bpy.ops.msfs2024.reload_lod_groups()
         return {'FINISHED'}
@@ -136,8 +142,9 @@ class LODIFY_OT_select(bpy.types.Operator):
 
 class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
     bl_idname = "lodify.generate_lod_decimate"
-    bl_label = "Generate LODs (Decimate + Shrinkwrap)"
+    bl_label = "Generate unfrozen LODs"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = "Generate unfrozen LODs"
     base_collection = None
     parent_collection = None
     base_name  = ""
@@ -221,11 +228,10 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         item.ui_lod_collection = self.base_collection
         item.ui_lod_level = 0
 
-        base_lod03_collection = self.base_collection
+        from_collection = self.base_collection
         wm.progress_update(wm.progress)
-        # Process LODs in order to ensure LOD02 exists before LOD03
-        # First pass: LOD01 and LOD02
-        for i in [lod for lod in lods_to_generate if lod != 3]:
+        # Process LODs in order
+        for i in [lod for lod in lods_to_generate]:# if lod != 3]:
             lod_name = f"{self.base_name}_LOD{i:02d}"
             print(f"Looking for/creating LOD collection: '{lod_name}'")
             lod_collection = bpy.data.collections.get(lod_name)
@@ -240,7 +246,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             # Set color tag for LOD collection
             color_tag = f'COLOR_0{i+1}'
             # Copy collection structure from base collection
-            lod_collection = utils.duplicate_collection(lod_collection, self.parent_collection,self.base_collection)
+            lod_collection = utils.duplicate_collection(lod_collection, self.parent_collection,from_collection)
             lod_collection.color_tag = color_tag
             lod_collection.name = f"{self.base_name}_LOD{i:02d}"
     
@@ -249,8 +255,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             if layer_lod_collection:
                 layer_lod_collection.exclude = False
 
-            if i == 2:
-                base_lod03_collection = lod_collection
+            if scn.lod.progressive_mode:# or i == 2:
+                from_collection = lod_collection #else fallback to lod0
             # Add LOD to the list
             item = utils.get_generated_lod_list().add()
             item.ui_lod_collection = lod_collection
@@ -264,41 +270,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 context.workspace.status_text_set(f"Generating LODs: {wm.progress:.1f}%")
             except:
                 pass  # Fallback for older Blender versions
-            wm.progress_update(wm.progress)
-        if 3 in lods_to_generate:
-            print(f"=== Processing LOD03 ===")
-            lod03_name = f"{self.base_name}_LOD03"
-            lod03_collection = bpy.data.collections.get(lod03_name)
-            if lod03_collection:
-                print(f"  Found existing collection: '{lod03_name}'")
-                #include in view layer if needed, otherwise process might fail if objects already exist
-                #layer_lod_collection = recurLayerCollection(bpy.context.view_layer.layer_collection,lod03_name)
-                layer_lod_collection = utils.find_layer_collection(lod03_collection,bpy.context.view_layer.layer_collection)
-                if layer_lod_collection:
-                    layer_lod_collection.exclude = False
-                # Clear existing objects in the collection
-                self.clear_collection(lod03_collection)
-            # Copy collection structure from base collection for LOD03
-            lod03_collection = utils.duplicate_collection(lod03_collection, self.parent_collection, base_lod03_collection) 
-            # Set color tag for LOD03 collection
-            lod03_collection.color_tag = 'COLOR_04'
-            lod03_collection.name = f"{self.base_name}_LOD03"
-
-            #layer_lod_collection = recurLayerCollection(bpy.context.view_layer.layer_collection,lod03_collection.name)
-            layer_lod_collection = utils.find_layer_collection(lod03_collection,bpy.context.view_layer.layer_collection)
-            if layer_lod_collection:
-                layer_lod_collection.exclude = False        
-            # Add LOD03 to the list
-            item = utils.get_generated_lod_list().add()
-            item.ui_lod_collection = lod03_collection
-            item.ui_lod_level = 3
-            #item.ui_dsp = True
-            # Process LOD03 from LOD02
-            print(f"  Generating LOD03")# using decimate"
-            self.process_objects( lod03_collection, 3, scn, context)
-            processed_objects += base_mesh_count
-            wm.progress =  min(95,math.ceil((processed_objects / total_objects) * 100))
-            #scn.lod.wm.progress =  80.0
             wm.progress_update(wm.progress)
         #auto apply modifiers option
         if scn.lod.auto_apply_modifiers:
@@ -340,7 +311,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         # Set LOD values using the calculated optimal values AFTER LOD generation is completed
         try:
             # Use the optimal lod values
-            utils.set_msfs_multi_exporter_lod_values(self.base_collection)
+            lod_values_set = utils.set_msfs_multi_exporter_lod_values(self.base_collection)
             print(f"Successfully called set_default_lod_values operator")
         except Exception as e:
             print(f"ERROR: Failed to call set_default_lod_values operator: {str(e)}")
