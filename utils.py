@@ -184,7 +184,7 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
         
         # Find or create the LOD group for this collection
         base_root_name = get_root_name_from_ID(base_collection)
-        generated_lods = list(get_generated_lod_list())
+        generated_lods = list(get_generated_lod_list(base_root_name))
 
         for msfs_lod_group in msfs_lod_groups:    
             if not msfs_lod_group or not msfs_lod_group.lods or len(msfs_lod_group.lods) == 0:
@@ -631,28 +631,32 @@ def get_ID_Totals(context,id):
     sumpolygons = 0
     summaterials = 0
     
-    depsgraph = context.evaluated_depsgraph_get()  
-    
-    if type(id) is bpy.types.Collection:
-        for obj in id.all_objects:
-            if obj.type == 'MESH':
-                object_eval = obj.evaluated_get(depsgraph)
+    try:
+        depsgraph = context.evaluated_depsgraph_get()  
+        if not depsgraph:
+            return (0,0,0)
+        
+        if type(id) is bpy.types.Collection:
+            for obj in id.all_objects:
+                if obj.type == 'MESH':
+                    object_eval = obj.evaluated_get(depsgraph)
+                    numvertices = len(object_eval.data.vertices)
+                    sumvertices += numvertices
+                    numpolygons = len(object_eval.data.polygons)
+                    sumpolygons += numpolygons
+                    nummaterials = len(object_eval.data.materials)
+                    summaterials += nummaterials
+        elif type(id) is bpy.types.Object:
+            if id.type == 'MESH':
+                object_eval = id.evaluated_get(depsgraph)
                 numvertices = len(object_eval.data.vertices)
                 sumvertices += numvertices
                 numpolygons = len(object_eval.data.polygons)
                 sumpolygons += numpolygons
                 nummaterials = len(object_eval.data.materials)
                 summaterials += nummaterials
-    elif type(id) is bpy.types.Object:
-        if id.type == 'MESH':
-            object_eval = id.evaluated_get(depsgraph)
-            numvertices = len(object_eval.data.vertices)
-            sumvertices += numvertices
-            numpolygons = len(object_eval.data.polygons)
-            sumpolygons += numpolygons
-            nummaterials = len(object_eval.data.materials)
-            summaterials += nummaterials
-
+    except:
+        pass
     return (sumvertices,sumpolygons,summaterials)
 
 
