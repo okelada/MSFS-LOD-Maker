@@ -15,8 +15,8 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
     
     progressive_mode: BoolProperty(
         name="Inherit from higher lod",
-        description="Inherit from higher lod instead of lod0 (except lod3)",
-        default=False
+        description="Inherit from closest more detailed lod instead of from lod0",
+        default=True
     )
 
     collision_boxes_to_lod0_only: BoolProperty(

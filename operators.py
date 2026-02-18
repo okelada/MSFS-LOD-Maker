@@ -20,7 +20,7 @@ from . import utils
 class LODIFY_OT_cleanup(bpy.types.Operator):
     bl_idname = "lodify.cleanup"
     bl_label = "Cleanup generated lods"
-    #bl_description = "Cleanup generated lods"
+    bl_description = "Cleanup existing lods"
     bl_options = {'REGISTER', 'UNDO'}
     delete_frozen: BoolProperty(default=False)
 

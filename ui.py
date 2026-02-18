@@ -192,7 +192,7 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             row.scale_y = 1.5
             button_text = "Cleanup unfrozen - " +  (base_collection.name if base_collection else "no selection")
             row.operator("lodify.cleanup", text = button_text, icon='CANCEL').delete_frozen = False
-            button_text = "Cleanup All - " +  (base_collection.name if base_collection else "no selection")
+            button_text = "Cleanup All (!) - " +  (base_collection.name if base_collection else "no selection")
             row.operator("lodify.cleanup", text = button_text, icon='TRASH').delete_frozen = True
             col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0)#3.6 compat
             row = col.row()
