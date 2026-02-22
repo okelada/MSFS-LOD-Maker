@@ -497,6 +497,9 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         for obj in target_collection.objects:
             if obj.type == 'MESH':# and not self.is_in_child_lod00(obj, self.base_collection):
                 utils.lodify_name(obj,3)
+                
+                self.apply_vertex_colors_by_mode(obj, 3,scn.lod.lod3_gamma_corr, 'BAKE_ALL')#force bake 03 from 00
+                obj.data.materials.clear()
                 #pass 1
                 final_obj = self.apply_lod_generation_method(obj, 3, 1, scn, context, shrinkwrapped_proxies)
                 #pass 2
