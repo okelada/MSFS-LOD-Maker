@@ -3,7 +3,7 @@ import bpy
 import re
 from collections import defaultdict
 from bisect import bisect_left
-from mathutils import Vector
+from mathutils import Vector,Matrix
 import addon_utils
 
 class LODIFY_list:
@@ -535,6 +535,16 @@ def remove_lod_collection(base_name,lod_level):
             lod_list.remove(lod)
 
 
+#https://blenderartists.org/t/modifying-object-origin-with-python/507305/7
+def set_mesh_origin(ob, pos):
+    '''Given a mesh object set it's origin to a given position.'''
+    # Casting pos to vector so you can pass in tuples or lists
+    pos = Vector(pos)
+    mat = Matrix.Translation(pos - ob.location)
+    ob.location = pos
+    ob.data.transform(mat.inverted())
+    ob.data.update()
+
 def reparent_child(child,new_parent):
     # parent_inverse_world_matrix = new_parent.matrix_world.inverted()
     # child.parent = new_parent
@@ -546,6 +556,7 @@ def unparent_child(child):
     parented_wm = child.matrix_world.copy()
     child.parent = None
     child.matrix_world = parented_wm
+
 
 #https://blender.stackexchange.com/questions/104886/how-do-i-copy-children-of-an-object-using-copy-method-without-messing-up-thei
 def copy_ob(ob, parent, collection):

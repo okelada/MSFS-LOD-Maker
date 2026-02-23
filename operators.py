@@ -713,6 +713,9 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         
         # Apply the scale transform to make it permanent
         bpy.context.view_layer.objects.active = proxy
+
+       
+
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
         
         #after we are done transforming, transfer hierarchy to proxy
@@ -723,7 +726,10 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             bpy.context.evaluated_depsgraph_get().update() #because proxy is not there yet
             utils.unparent_child(c)
             utils.reparent_child(c,proxy)
-        
+
+        #make sure origin is the same as original lod
+        utils.set_mesh_origin(proxy,original_obj.location)
+
         if not just_cubes:
             # Enter edit mode, delete bottom face, and apply subdivisions
             bpy.ops.object.mode_set(mode='EDIT')
