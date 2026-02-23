@@ -16,15 +16,16 @@ I've adapted Devinci's code to my workflow and preferences
   - Both decimation methods and parameters are now adjustable per lod level.
   - There is a results view with the generated vertices and polygons totals.
   - Lod level collections visibility (exclusion from view layer) can be managed from the results view.
-    >___Lod2 and lod3 are stripped of materials and in Blender, they must be visualized in solid shading mode with attributes as color. You are expected too use only one baked fs material, as vertex color will be baked from one material only.___
+    >___Lod2 and lod3 are stripped of materials and in Blender they must be visualized in solid shading mode with attributes as color. You are expected too use only one baked fs material, as vertex color will be baked from one material only.___
 
     >___Excluded content might not show up in the multi-exporter if 'visible_only' is active.___
   - A 'Cleanup' function has been added, this will remove all generated lods but lod0.
 
 - **Generation** 
   - Initial duplication of lod1-3 base collections is now based in a deep copy process similar to manual duplication in the outliner.
+  - Object location is guaranteed to be the same among lods.
   - Processing can be progressive (every new lod starting from its upstream predecessor), or default (every new lod starting from lod0).
-  - Lod3 is no longer treated differently from the others.
+  - Lod3 is no longer treated differently.
   - Once generated, lods are persistent if unchecked. They will be frozen until cleaned up. It facilitates manual edition.
   - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
     >___Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf, at least with my setup.___
@@ -55,14 +56,16 @@ I've adapted Devinci's code to my workflow and preferences
   Current status: beta.
 
 <p>
- Tested with Blender 4.2 and MSFS 2024 SU4 / SDK 1.5.7<br>
+ Tested with Blender 4.2/4.5 and MSFS 2024 SU4 / SDK 1.5.7<br>
  Basic Blender 3.6 testing done.<br>
  Contains code taken from blender.stackexchange.com, stackoverflow.com and blenderartists.org<br>
  Some statements of the original README below might no longer apply.<br><br><br>
 
 original README.md follows</p>
-
+</BR>
 ---
+</BR>
+
 
 ## Overview
 MSFS LOD system for collections in Blender 3.6 & above, with LOD generation and automatic MSFS LOD value calculation. It allows for easy management and generation of LODs, with features for decimation, material conversion, texture baking, and automatic optimization of LOD values for the MSFS Multi-Export addon.
