@@ -58,10 +58,10 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         name="Vertex Color Mode",
         description="How to handle vertex colors in LOD generation",
         items=[
-            ('AUTO', "Automatic", "LOD00-01: white, LOD02: baked from albedo, LOD03: inherited from LOD02"),
-            ('WHITE_ONLY', "White Only", "Apply white vertex colors to all LODs"),
-            ('BAKE_ALL', "Bake All", "LOD00-01: white, LOD02: baked from albedo, LOD03: inherited from LOD02"),
-            ('TRANSFER_ALL', "Transfer All", "LOD00-01: white colors, LOD02-03: gray colors")
+            ('AUTO', "Automatic", "LOD01: white, LOD02-03: baked from albedo"),
+            ('WHITE_ONLY', "White Only", "Apply white vertex colors to all LOD01-03"),
+            ('BAKE_ALL', "Bake All", "LOD01-03: baked from albedo"),
+            ('GRAY_ALL', "Gray All", "LOD01-03: gray colors")
         ],
         default='AUTO'
     )
@@ -349,7 +349,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
 
     auto_apply_modifiers: BoolProperty(
         name="Auto apply modifiers",
-        description="Apply modifiers automatically, except shrinkwrap", 
+        description="Apply modifiers automatically", 
         default=True
     )
     
