@@ -126,7 +126,8 @@ class LODIFY_OT_select(bpy.types.Operator):
     def execute(self, context):
         #scn = context.scene
         base_collection,parent_collection = utils.find_base_collection()
-        
+        no_materials = False
+
         if not base_collection:
             self.report({'ERROR'}, "Base LOD collection (ending with _LODNN) not selected, click on a collection ending with _LODNN  in the outliner")
             return {'CANCELLED'}
@@ -137,6 +138,10 @@ class LODIFY_OT_select(bpy.types.Operator):
         if self.lod_level != -1:
             selected_coll = bpy.data.collections.get(f"{base_name}_LOD{self.lod_level:02d}")
             if selected_coll: 
+                for obj in selected_coll.all_objects:
+                    if obj.type == 'MESH' and not obj.active_material:
+                        no_materials = True
+                        break
                 active_lod_layer_collection = None
                 for lod_collection in utils.get_generated_lod_list(base_name):
                     lod_layer_collection = utils.find_layer_collection(lod_collection.ui_lod_collection,bpy.context.view_layer.layer_collection)
@@ -150,7 +155,8 @@ class LODIFY_OT_select(bpy.types.Operator):
                         lod_layer_collection.exclude = is_excluded
                 if active_lod_layer_collection:
                     bpy.context.view_layer.active_layer_collection = active_lod_layer_collection              
-        else:
+        else: #show all
+            no_materials = True
             for lod_collection in utils.get_generated_lod_list(base_name):
                 lod_layer_collection = utils.find_layer_collection(lod_collection.ui_lod_collection,bpy.context.view_layer.layer_collection)
                 if lod_layer_collection:
@@ -162,6 +168,11 @@ class LODIFY_OT_select(bpy.types.Operator):
                     active_lod_layer_collection = lod_layer_collection
             if active_lod_layer_collection:
                 bpy.context.view_layer.active_layer_collection = active_lod_layer_collection
+
+        if no_materials:
+            utils.force_solid_shading()
+        else:
+            utils.force_material_shading()
         return {'FINISHED'}
 
 
@@ -290,11 +301,19 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             wm.progress_update(wm.progress)
         #auto apply modifiers option
         if scn.lod.auto_apply_modifiers:
+
             for i in range(len(lods_to_generate)):
-                print(f"=== Auto applying modifiers  for lod {lods_to_generate[i]} ===")
-                lod_name = f"{self.base_name}_LOD{lods_to_generate[i]:02d}"
+                lod_level = lods_to_generate[i]
+                print(f"=== Auto applying modifiers  for lod {lod_level} ===")
+                lod_name = f"{self.base_name}_LOD{lod_level:02d}"
                 lod_collection = bpy.data.collections.get(lod_name)
                 applied_count,error_count = utils.apply_modifiers(context,lod_collection)
+                if error_count == 0:
+                    for obj in lod_collection.all_objects:
+                        if obj.type == 'MESH':
+                            utils.merge_vertices_by_distance(obj, context,lod_level)
+
+
 
         wm.progress =  95.0
         wm.progress_update(wm.progress)
@@ -447,6 +466,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             bpy.context.scene.collection.objects.unlink(proxy)
         
         target_collection.objects.link(proxy)
+        return proxy
   
 
     def process_objects(self, target_collection, lod_level, scn, context):
@@ -478,44 +498,41 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 #pass 2
                 final_obj = self.apply_lod_generation_method(final_obj, lod_level, 2, scn, context, shrinkwrapped_proxies)
                 # Merge vertices by distance for the final object
-                if final_obj:
-                    utils.merge_vertices_by_distance(final_obj, context,lod_level) 
+                # if final_obj:
+                #     utils.merge_vertices_by_distance(final_obj, context,lod_level)  #does nothing to shrinkwrap
             else:
                 utils.lodify_name(obj,lod_level)
     
-        for original_obj in shrinkwrapped_proxies:
+        for original_obj in shrinkwrapped_proxies: #keys
             if shrinkwrapped_proxies[original_obj]:
+                #utils.merge_vertices_by_distance(shrinkwrapped_proxies[original_obj], context,lod_level) 
                 self.swap_original_by_proxy(shrinkwrapped_proxies[original_obj],original_obj,target_collection)
+                
         # Process child collections
         for child_target in target_collection.children:
             utils.lodify_name(child_target,lod_level)
             self.process_objects(child_target, lod_level, scn, context)
 
 
-    def apply_vertex_colors_by_mode(self, obj, lod_level, gamma_corr,vertex_color_mode = 'AUTO'):
+    def apply_vertex_colors_by_mode(self, target_obj, lod_level, gamma_corr,vertex_color_mode = 'AUTO',transfer_source_obj = None):
         """Apply vertex colors based on the selected vertex color mode."""
-        print(f"  Applying vertex colors (Mode: {vertex_color_mode}) for LOD{lod_level:02d} object: {obj.name}")
+        print(f"  Applying vertex colors (Mode: {vertex_color_mode}) for LOD{lod_level:02d} object: {target_obj.name}")
         
         if vertex_color_mode == 'BAKE_ALL': #everything baked. materials lost
-            self.bake_lod00_albedo_to_vertex_colors(obj,gamma_corr)
-            obj.data.materials.clear()  # Remove materials after baking
-            print(f"    Baked LOD00 albedo to vertex colors (BAKE_ALL mode)")
-            return
-        
-        if vertex_color_mode == 'AUTO':
+            self.bake_lod00_albedo_to_vertex_colors(target_obj,gamma_corr)
+            target_obj.data.materials.clear()  # Remove materials after baking
+        elif vertex_color_mode == 'AUTO':
             if lod_level == 1:
-                self.create_white_vertex_colors(obj)
-                print(f"    Applied pure white vertex colors to LOD{lod_level:02d} (no baking)")
+                self.create_white_vertex_colors(target_obj)
             elif lod_level == 2 or lod_level == 3:  # LOD02/3 - bake from LOD00
-                self.bake_lod00_albedo_to_vertex_colors(obj,gamma_corr)
-                obj.data.materials.clear()  # Remove materials after baking
-                print(f"    Baked LOD00 albedo to vertex colors (AUTO mode)")
+                self.bake_lod00_albedo_to_vertex_colors(target_obj,gamma_corr)
+                target_obj.data.materials.clear()  # Remove materials after baking
         elif vertex_color_mode == 'WHITE_ONLY':
-            self.create_white_vertex_colors(obj)
-            print(f"    Applied pure white vertex colors (WHITE_ONLY mode)")
-        elif vertex_color_mode == 'GRAY_ALL':
-            self.create_gray_vertex_colors(obj)
-            print(f"    Applied gray vertex colors (GRAY_ALL mode)")
+            self.create_white_vertex_colors(target_obj)
+        elif vertex_color_mode == 'TRANSFER_ALL':   
+            if transfer_source_obj:
+                self.transfer_vertex_colors_from_object(transfer_source_obj,target_obj)
+    
 
 
     def apply_lod_generation_method(self, obj, lod_level,pass_number, scn, context,shrinkwrapped_proxies):
@@ -627,13 +644,14 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         
         # Create a cube proxy positioned and scaled specifically for this mesh
         bpy.ops.object.select_all(action='DESELECT')
+        #bpy.ops.mesh.primitive_ico_sphere_add(radius=1,subdivisions=1,location=bbox_center) # TODO
         bpy.ops.mesh.primitive_cube_add(size=2, location=bbox_center)
         proxy = context.active_object
         proxy.name = f"{original_obj.name}_PROXY"
 
         # Scale the proxy to match the target object's exact bounding box dimensions
         # Add a small margin (10%) to ensure complete coverage
-        margin_factor = 1.1
+        margin_factor = 3.1
         proxy.scale = (
             bbox_dimensions.x * margin_factor / 2,  # Cube default size is 2, so divide by 2
             bbox_dimensions.y * margin_factor / 2,
@@ -955,124 +973,102 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             except Exception as restore_error:
                 print(f"    Warning: Could not fully restore original state: {str(restore_error)}")
 
-    # def transfer_vertex_colors_from_lod02(self, lod03_obj):
-    #     """
-    #     Transfer vertex colors from the corresponding LOD02 object to LOD03.
-    #     This is more reliable than baking textures on shrinkwrap geometry.
+    def transfer_vertex_colors_from_object(self,source_obj, target_obj):
+        if target_obj.type != 'MESH' or source_obj.type != 'MESH':
+            return False
+        # Check if source has vertex colors
+        if not source_obj.data.color_attributes:
+            print(f"    Warning: source object '{source_obj.name}' has no vertex colors to transfer")
+            return False
         
-    #     Args:
-    #         lod03_obj: The LOD03 object to transfer vertex colors to
-    #     """
-    #     if lod03_obj.type != 'MESH':
-    #         return False
+        source_color_attr = source_obj.data.color_attributes.get("Color")
+        if not source_color_attr:
+            print(f"    Warning: source object '{source_obj.name}' has no 'Color' attribute")
+            return False
         
-    #     # Find the corresponding LOD02 object
-    #     base_name = lod03_obj.name.replace("_LOD03", "")
-    #     lod02_name = f"{base_name}_LOD02"
+        print(f"    Transferring vertex colors from source '{source_obj.name}' to target '{target_obj.name}'")
         
-    #     # Search for LOD02 object in all collections
-    #     lod02_obj = None
-    #     for obj in bpy.data.objects:
-    #         if obj.name == lod02_name and obj.type == 'MESH':
-    #             lod02_obj = obj
-    #             break
-        
-    #     if not lod02_obj:
-    #         print(f"    Warning: Could not find LOD02 object '{lod02_name}' for vertex color transfer")
-    #         return False
-        
-    #     # Check if LOD02 has vertex colors
-    #     if not lod02_obj.data.color_attributes:
-    #         print(f"    Warning: LOD02 object '{lod02_obj.name}' has no vertex colors to transfer")
-    #         return False
-        
-    #     lod02_color_attr = lod02_obj.data.color_attributes.get("Color")
-    #     if not lod02_color_attr:
-    #         print(f"    Warning: LOD02 object '{lod02_obj.name}' has no 'Color' attribute")
-    #         return False
-        
-    #     print(f"    Transferring vertex colors from LOD02 '{lod02_obj.name}' to LOD03 '{lod03_obj.name}'")
-        
-    #     try:
-    #         # Store current state
-    #         original_selection = bpy.context.selected_objects
-    #         original_active = bpy.context.active_object
-    #         #original_mode = bpy.context.mode
+        try:
+            # Store current state
+            original_selection = bpy.context.selected_objects
+            original_active = bpy.context.active_object
+            #original_mode = bpy.context.mode
             
-    #         # Switch to object mode if needed
-    #         if bpy.context.mode != 'OBJECT':
-    #             bpy.ops.object.mode_set(mode='OBJECT')
+            # Switch to object mode if needed
+            if bpy.context.mode != 'OBJECT':
+                bpy.ops.object.mode_set(mode='OBJECT')
             
-    #         # Ensure LOD03 has vertex colors
-    #         if not lod03_obj.data.color_attributes:
-    #             lod03_obj.data.color_attributes.new(name="Color", type='FLOAT_COLOR', domain='CORNER')
+            # Ensure LOD03 has vertex colors
+            if not target_obj.data.color_attributes:
+                target_obj.data.color_attributes.new(name="Color", type='FLOAT_COLOR', domain='CORNER')
             
-    #         lod03_color_attr = lod03_obj.data.color_attributes.get("Color")
-    #         if lod03_color_attr:
-    #             lod03_obj.data.color_attributes.active_color = lod03_color_attr
+            target_color_attr = target_obj.data.color_attributes.get("Color")
+            if target_color_attr:
+                target_obj.data.color_attributes.active_color = target_color_attr
             
-    #         # Select both objects for data transfer
-    #         bpy.ops.object.select_all(action='DESELECT')
-    #         lod02_obj.select_set(True)  # Source
-    #         lod03_obj.select_set(True)  # Target
-    #         bpy.context.view_layer.objects.active = lod03_obj  # Target must be active
+            # Select both objects for data transfer
+            bpy.ops.object.select_all(action='DESELECT')
+            source_obj.select_set(True)  # Source
+            target_obj.select_set(True)  # Target
+            bpy.context.view_layer.objects.active = target_obj  # Target must be active
             
-    #         # Use Data Transfer modifier for vertex color transfer
-    #         data_transfer = lod03_obj.modifiers.new(name="TempDataTransfer", type='DATA_TRANSFER')
-    #         data_transfer.object = lod02_obj
-    #         data_transfer.use_vert_data = True
-    #         data_transfer.data_types_verts = {'VGROUP_WEIGHTS'}  # This will be changed to vertex colors
+            # Use Data Transfer modifier for vertex color transfer
+            data_transfer = target_obj.modifiers.new(name="TempDataTransfer", type='DATA_TRANSFER')
+            data_transfer.object = source_obj
+            data_transfer.use_vert_data = True
+            data_transfer.data_types_verts = {'VGROUP_WEIGHTS'}  # This will be changed to vertex colors
             
-    #         # Configure for vertex color transfer
-    #         data_transfer.use_loop_data = True
-    #         data_transfer.data_types_loops = {'VCOL'}
-    #         data_transfer.layers_vcol_select_src = 'ALL'
-    #         data_transfer.layers_vcol_select_dst = 'ALL'
+            # Configure for vertex color transfer
+            data_transfer.use_loop_data = True
+            data_transfer.data_types_loops = {'VCOL'}
+            data_transfer.layers_vcol_select_src = 'ALL'
+            data_transfer.layers_vcol_select_dst = 'ALL'
             
-    #         # Apply the modifier
-    #         bpy.ops.object.modifier_apply(modifier=data_transfer.name)
-    #         #print(f"    Successfully transferred vertex colors using Data Transfer modifier")
-    #         return True
+            # Apply the modifier
+            bpy.ops.object.modifier_apply(modifier=data_transfer.name)
+            #print(f"    Successfully transferred vertex colors using Data Transfer modifier")
+            return True
             
-    #     except Exception as e:
-    #         print(f"    Error during vertex color transfer: {str(e)}")
-    #         # Remove data transfer modifier if it exists
-    #         try:
-    #             if "TempDataTransfer" in [mod.name for mod in lod03_obj.modifiers]:
-    #                 lod03_obj.modifiers.remove(lod03_obj.modifiers["TempDataTransfer"])
-    #         except:
-    #             pass
-    #         return False
+        except Exception as e:
+            print(f"    Error during vertex color transfer: {str(e)}")
+            # Remove data transfer modifier if it exists
+            try:
+                if "TempDataTransfer" in [mod.name for mod in target_obj.modifiers]:
+                    target_obj.modifiers.remove(target_obj.modifiers["TempDataTransfer"])
+            except:
+                pass
+            return False
             
-    #     finally:
-    #         # Restore original state
-    #         try:
-    #             bpy.ops.object.select_all(action='DESELECT')
-    #             for selected_obj in original_selection:
-    #                 if selected_obj and selected_obj.name in bpy.data.objects:
-    #                     selected_obj.select_set(True)
-    #             if original_active and original_active.name in bpy.data.objects:
-    #                 bpy.context.view_layer.objects.active = original_active
-    #         except Exception as restore_error:
-    #             print(f"    Warning: Could not fully restore original state: {str(restore_error)}")
+        finally:
+            # Restore original state
+            try:
+                bpy.ops.object.select_all(action='DESELECT')
+                for selected_obj in original_selection:
+                    if selected_obj and selected_obj.name in bpy.data.objects:
+                        selected_obj.select_set(True)
+                if original_active and original_active.name in bpy.data.objects:
+                    bpy.context.view_layer.objects.active = original_active
+            except Exception as restore_error:
+                print(f"    Warning: Could not fully restore original state: {str(restore_error)}")
 
-    def create_gray_vertex_colors(self, obj):
-        """Apply gray vertex colors to the object."""
-        if obj.type != 'MESH':
-            return
+
+    # def create_gray_vertex_colors(self, obj):
+    #     """Apply gray vertex colors to the object."""
+    #     if obj.type != 'MESH':
+    #         return
         
-        # Ensure the object has vertex colors
-        if not obj.data.color_attributes:
-            obj.data.color_attributes.new(name="Color", type='FLOAT_COLOR', domain='CORNER')
+    #     # Ensure the object has vertex colors
+    #     if not obj.data.color_attributes:
+    #         obj.data.color_attributes.new(name="Color", type='FLOAT_COLOR', domain='CORNER')
         
-        # Set Color as the default color attribute
-        color_attr = obj.data.color_attributes.get("Color")
-        if color_attr:
-            obj.data.color_attributes.active_color = color_attr
-            # Fill with gray color (0.7, 0.7, 0.7, 1.0)
-            for i in range(len(color_attr.data)):
-                color_attr.data[i].color = (0.7, 0.7, 0.7, 1.0)
-            print(f"    Applied gray vertex colors to {obj.name}")
+    #     # Set Color as the default color attribute
+    #     color_attr = obj.data.color_attributes.get("Color")
+    #     if color_attr:
+    #         obj.data.color_attributes.active_color = color_attr
+    #         # Fill with gray color (0.7, 0.7, 0.7, 1.0)
+    #         for i in range(len(color_attr.data)):
+    #             color_attr.data[i].color = (0.7, 0.7, 0.7, 1.0)
+    #         print(f"    Applied gray vertex colors to {obj.name}")
 
 
 class LODIFY_OT_set_default_lod_values(bpy.types.Operator):
@@ -1160,18 +1156,23 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
             self.report({'ERROR'}, f"No collection assigned to LOD index {self.lod_index}")
             return {'CANCELLED'}
         
-        collection = lod_item.ui_lod_collection    
-        utils.make_collection_active(collection)
-        applied_count,error_count = utils.apply_modifiers(context,collection)
+        lod_collection = lod_item.ui_lod_collection
+        lod_level = lod_item.ui_lod_level
+        utils.make_collection_active(lod_collection)
+        applied_count,error_count = utils.apply_modifiers(context,lod_collection)
+        if error_count == 0:
+            for obj in lod_collection.all_objects:
+                if obj.type == 'MESH':
+                    utils.merge_vertices_by_distance(obj, context,lod_level)
 
         if applied_count > 0:
-            self.report({'INFO'}, f"Applied modifiers on {applied_count} objects in '{collection.name}'")
+            self.report({'INFO'}, f"Applied modifiers on {applied_count} objects in '{lod_collection.name}'")
         
         if error_count > 0:
             self.report({'WARNING'}, f"Encountered {error_count} errors while applying modifiers")
         
         if applied_count == 0 and error_count == 0:
-            self.report({'INFO'}, f"No objects with modifiers found in '{collection.name}'")
+            self.report({'INFO'}, f"No objects with modifiers found in '{lod_collection.name}'")
         
         return {'FINISHED'}
 
