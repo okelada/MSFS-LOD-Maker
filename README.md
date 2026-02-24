@@ -17,7 +17,7 @@ I've adapted Devinci's code to my workflow and preferences
   - Both decimation methods and parameters are now adjustable per lod level.
   - There is a results view with the generated vertices and polygons totals.
   - Lod level collections visibility (exclusion from view layer) can be managed from the results view.
-    >___Lod levels without materials must be visualized in solid shading mode with attributes as color. You are expected too use only one baked fs material, as vertex color will be baked from one material only.___
+    >___You are expected too use only one baked fs material, as vertex color will be baked from one material only.___
 
     >___Excluded content might not show up in the multi-exporter if 'visible_only' is active.___
   - A 'Cleanup' function has been added, this will remove all generated lods.
