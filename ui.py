@@ -286,7 +286,7 @@ class LODIFY_PT_modifier_tools(bpy.types.Panel):
             if generated:
                 # Create buttons for each LOD
                 for i, item in enumerate(utils.get_generated_lod_list(base_name)):
-                    if item.ui_lod_collection:  # Only show if collection is assigned
+                    if item.ui_lod_level > 0 and  item.ui_lod_collection:  # Only show if collection is assigned
                         row = col.row()
                         apply_op = row.operator("lodify.apply_lod_modifiers", text=f"Apply {item.ui_lod_collection.name} Modifiers")
                         row.active = not base_collection  is None
