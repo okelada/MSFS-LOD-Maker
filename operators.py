@@ -120,7 +120,7 @@ class LODIFY_OT_select(bpy.types.Operator):
     bl_idname = "lodify.select"
     bl_label = "View a generated lod alone"
     bl_options = {'REGISTER', 'UNDO'}
-    bl_description = "Exclude other lod levels from view"
+    bl_description = "Show this lod level on viewport"
     lod_level: IntProperty(default=0)
 
     def execute(self, context):

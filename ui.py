@@ -120,7 +120,7 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
                 row.prop(lod_props, "lod_minsizes_quality", text=" MSFS LOD curve")
             row = col.row()
             row.alignment = 'LEFT'
-            row.prop(lod_props, "insert_token", text="Inserted token")
+            row.prop(lod_props, "insert_token", text="Custom token")
             row.label(text = "(To revert:delete token, cleanup lods, and manually remove it from lod0 names)")
             row = col.row()
             row.alignment = 'LEFT'
