@@ -5,10 +5,31 @@ from collections import defaultdict
 from bisect import bisect_left
 from mathutils import Vector,Matrix
 import addon_utils
+import bmesh
 
 class LODIFY_list:
     ui_lod_collection = None
     ui_lod_level = -1
+
+def force_solid_shading():
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if(area.type == 'VIEW_3D'):
+                for space in area.spaces:
+                    if(space.type == 'VIEW_3D'):
+                        if(space.shading.type != 'SOLID'):
+                            space.shading.type = 'SOLID'
+                        if space.shading.color_type != 'VERTEX':
+                            space.shading.color_type = 'VERTEX'
+
+def force_material_shading():
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if(area.type == 'VIEW_3D'):
+                for space in area.spaces:
+                    if(space.type == 'VIEW_3D'):
+                        if(space.shading.type != 'MATERIAL'):
+                            space.shading.type = 'MATERIAL'
 
 
 def get_lod_list(base_collection):
@@ -275,6 +296,8 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
 
 def merge_vertices_by_distance(obj, context,lod_level):
     """Merge vertices by distance for the given object."""
+    if not obj.type == 'MESH':
+        return
 
     match lod_level:
         case 1:
@@ -283,21 +306,29 @@ def merge_vertices_by_distance(obj, context,lod_level):
             merge_threshold = context.scene.lod.lod2_merge_threshold 
         case 3:
             merge_threshold = context.scene.lod.lod3_merge_threshold
+    if merge_threshold > 0.0:
+        # if context.view_layer.objects.active:
+        #     bpy.ops.object.mode_set(mode='OBJECT')
+        # bpy.ops.object.select_all(action='DESELECT')
+        # obj.select_set(True)
+        # context.view_layer.objects.active = obj
+        # # Enter edit mode and merge vertices by distance
+        # bpy.ops.object.mode_set(mode='EDIT')
+        # bpy.ops.mesh.select_mode(type='VERT')
+        # bpy.ops.mesh.select_all(action='SELECT')
+        # bpy.ops.mesh.remove_doubles(threshold=merge_threshold)  # 0.0001m threshold
+        # bpy.ops.object.mode_set(mode='OBJECT')
+        
 
-    if context.view_layer.objects.active:
-        bpy.ops.object.mode_set(mode='OBJECT')
-
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    context.view_layer.objects.active = obj
-    
-    # Enter edit mode and merge vertices by distance
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.mesh.remove_doubles(threshold=merge_threshold)  # 0.0001m threshold
-    bpy.ops.object.mode_set(mode='OBJECT')
-    
-    print(f"    Merged vertices by distance ({merge_threshold}m) for {obj.name}")
+        bm = bmesh.new()
+        m  = obj.data
+        bm.from_mesh(m)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=merge_threshold)
+        bm.to_mesh(m)
+        m.update()
+        bm.clear()
+        bm.free()
+        print(f"    Merged vertices by distance ({merge_threshold}m) for {obj.name}")
 
 
 
