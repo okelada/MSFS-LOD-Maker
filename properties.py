@@ -61,7 +61,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('AUTO', "Automatic", "LOD01: white, LOD02-03: baked from albedo"),
             ('WHITE_ONLY', "White Only", "Apply white vertex colors to all LOD01-03"),
             ('BAKE_ALL', "Bake All", "LOD01-03: baked from albedo"),
-            ('GRAY_ALL', "Gray All", "LOD01-03: gray colors")
+           # ('TRANSFER_ALL', "Transfer All", "Transferred vertex color from upstream")
         ],
         default='AUTO'
     )
