@@ -1,7 +1,8 @@
 # MSFS LOD Maker Blender Addon
 
 ## Unofficial fork of Devinci's great MSFS LOD Maker Blender Addon
-I've adapted Devinci's code to my workflow and preferences
+I've adapted Devinci's code to my workflow and preferences.<br>
+Note that in order to create a lod level of the desired minsize manual edition might be required.
 
 ### Changes from original fork:
 
@@ -16,8 +17,8 @@ I've adapted Devinci's code to my workflow and preferences
   - Generation parameters are now published almost exhaustively.
   - Both decimation methods and parameters are now adjustable per lod level.
   - There is a results view with the generated vertices and polygons totals.
-  - Lod level collections visibility (exclusion from view layer) can be managed from the results view.
-    >___Excluded content might not show up in the multi-exporter if 'visible_only' is active.___
+  - Lod level collections visibility can be managed from the results view.
+    >___Excluded content might not show up in the multi-exporter if 'visible_only' filter is active.___
   - A 'Cleanup' function has been added, this will remove all generated lods.
 
 **Generation** 
@@ -25,11 +26,11 @@ I've adapted Devinci's code to my workflow and preferences
   - Object location is guaranteed to be the same among lods.
   - Processing can be 'progressive' (every new lod starting from its upstream predecessor), or 'recursive' (every new lod starting from lod0).
   - Lod3 is no longer treated differently. 
-  - Once generated, lods are persistent (frozen) if unchecked, its name appearing between brackets in the results view. They will be kept until cleaned up. This facilitates manual edition.
+  - Once generated, lods are persistent (frozen) if unchecked, its name appearing between brackets in the results view. They will be kept untouched, which facilitates manual edition.
   - Exporting Asobo gizmos (collision meshes) and lights is supported.<br>
     >___Asobo gizmos, as opposite of lights, must be parented to a mesh object in order for them to make it to the gltf.___
 
-  - Minsizes can be calculated as per SDK published curves. They will be assigned per collection or per object, depending on the multi-exporter mode.
+  - Minsizes can be calculated as per SDK published curves, FWIW. They will be assigned per collection or per object, depending on the multi-exporter mode.
   - <span style="color:red">**Warning:** </span>___lod0 children will be renamed, both nested collections and objects.___<br>
     - Their names will be appended '\_LOD00'.<br>
     - Dot characters will be transformed to underscores.<br>
@@ -41,7 +42,7 @@ I've adapted Devinci's code to my workflow and preferences
     
   - An optional custom token can be inserted in the middle of the children's names, to help the multi-exporter recognize your lod groups.
     >___Even if this addon supports nested IDs, the multi-exporter can have a hard time to group them properly.<br>If everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>___
-  - Ability to add/remove simple collision boxes to all objects or collections containing objects with one click. You can add your own ones to model irregular shapes. In that case make sure their name doesn't start with "Collision_Box" or they could be deleted by the addon.<br>___Only SU4/SDK <= 1.5.7 for now. Asobo gizmos have just been rewritten from scratch and are unusable as of SU5 beta (SDK 1.6.4).___
+  - Ability to add/remove simple collision boxes to all objects or collections containing objects with one click. You can add your own ones to model irregular shapes. In that case make sure their name doesn't start with "MLM_Collision_Box" or they could be deleted by the addon.<br>___Only SU4/SDK <= 1.5.7 for now. Asobo gizmos have just been rewritten from scratch and are unusable as of SU5 beta (SDK 1.6.4).___
 
 **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one.
@@ -50,7 +51,7 @@ I've adapted Devinci's code to my workflow and preferences
   - A "just cubes" nuclear option method has been added to generate a lod with few vertices and no materials. Specially useful to create a lod3 when one FS object is composed of several blender objects, as cubes should be easy to modify by hand to get a general shape.
 
 **Color management**
-  - Color can be: materials inherited from the lod0 data and/or just vertex colors.
+  - Color can be: materials inherited from the lod0 data and/or just generated vertex colors.
     >___Color fidelity may be lost as geometry is decimated. Decoloration might appear where geometry is too far gone.___
   - A gamma correction option exists to fight the decoloration problem.
   - Color policy can be set per lod level, these are the supported modes:
@@ -58,7 +59,7 @@ I've adapted Devinci's code to my workflow and preferences
     - 'Bake' : No materials, vertex colors baked are from albedo texture. Default for lod2 and lod3.
       >___Vertex color will be baked from the first node based material slot.___
     - 'Gray' : No materials, vertex colors will just be a configurable gray level, that could be enough for faraway objects.
-    - 'Transfer colors' : No materials, Vertex color is transferred from upstream, alternative for lod3.
+    - 'Transfer colors' : No materials, Vertex color is transferred from upstream, alternative to 'Bake' for lod3.
 
 <br>
 
