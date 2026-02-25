@@ -53,17 +53,18 @@ Note that in order to create a lod level of the desired minsize manual edition m
 **Color management**
   - Color can be: materials inherited from the lod0 data and/or just generated vertex colors.
     >___Color fidelity may be lost as geometry is decimated. Decoloration might appear where geometry is too far gone.___
-  - A gamma correction option exists to fight the decoloration problem.
   - Color policy can be set per lod level, these are the supported modes:
     - 'Materials + White' : Materials are kept plus MSFS mandatory white vertex colors included. Default for lod1.
     - 'Bake' : No materials, vertex colors baked are from albedo texture. Default for lod2 and lod3.
       >___Vertex color will be baked from the first node based material slot.___
+
+      >___A gamma correction option exists to fight the decoloration problem.___
     - 'Gray' : No materials, vertex colors will just be a configurable gray level, that could be enough for faraway objects.
     - 'Transfer colors' : No materials, Vertex color is transferred from upstream, alternative to 'Bake' for lod3.
 
 <br>
 
-  Current status: beta.
+  Current status: permanent beta.
 
 <p>
  Tested with Blender 4.2/4.5 and MSFS 2024 SU4 / SDK 1.5.7<br>
