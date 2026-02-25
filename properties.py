@@ -53,17 +53,51 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
         description="Show advanced LOD generation and optimization settings",
         default=False
     )
+
+    vertex_color_gray_level: FloatProperty(
+        name="Gray level for gray vertex color mode",
+        description="Applied if gray level vertex color mode selected",
+        default=0.5,
+        min=0.0,
+        max=1.0,
+        precision=1,
+        unit='NONE'
+    )
     
-    vertex_color_mode: EnumProperty(
-        name="Vertex Color Mode",
-        description="How to handle vertex colors in LOD generation",
+    lod1_vertex_color_mode: EnumProperty(
+        name="Vertex Color Mode - LOD1",
+        description="How to handle vertex colors in LOD1",
         items=[
-            ('AUTO', "Automatic", "LOD01: white, LOD02-03: baked from albedo"),
-            ('WHITE_ONLY', "White Only", "Apply white vertex colors to all LOD01-03"),
-            ('BAKE_ALL', "Bake All", "LOD01-03: baked from albedo"),
-           # ('TRANSFER_ALL', "Transfer All", "Transferred vertex color from upstream")
+            ('MATERIALS+WHITE',"Materials + White", "Keep materials + white vertex colors"),
+            ('BAKE', "Bake", "Vertex colors baked from albedo"),
+            ('GRAY', "Gray", "Gray level vertex colors"),
+            ('TRANSFER_VERTEX', "Transfer vertex colors", "Transferred vertex color from upstream")
         ],
-        default='AUTO'
+        default='MATERIALS+WHITE'
+    )
+
+    lod2_vertex_color_mode: EnumProperty(
+        name="Vertex Color Mode - LOD2",
+        description="How to handle vertex colors in LOD2",
+        items=[
+            ('MATERIALS+WHITE',"Materials + White", "Keep materials + white vertex colors"),
+            ('BAKE', "Bake", "Vertex colors baked from albedo"),
+            ('GRAY', "Gray", "Gray level vertex colors"),
+            ('TRANSFER_VERTEX', "Transfer vertex colors", "Transferred vertex color from upstream")
+        ],
+        default='BAKE'
+    )
+
+    lod3_vertex_color_mode: EnumProperty(
+        name="Vertex Color Mode - LOD3",
+        description="How to handle vertex colors in LOD3",
+        items=[
+            ('MATERIALS+WHITE',"Materials + White", "Keep materials + white vertex colors"),
+            ('BAKE', "Bake", "Vertex colors baked from albedo"),
+            ('GRAY', "Gray", "Gray level vertex colors"),
+            ('TRANSFER_VERTEX', "Transfer vertex colors", "Transferred vertex color from upstream")
+        ],
+        default='TRANSFER_VERTEX'
     )
 
     shrinkwarp_bottom_face: BoolProperty(

@@ -55,6 +55,19 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
         row.prop(lod_props, "lod2_small_object_threshold", text="Small Obj. Thresh.")
         row.prop(lod_props, "lod3_small_object_threshold", text="Small Obj. Thresh.")
         col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0) #3.6 compat
+
+        row = col.row(align=True)
+        split = row.split(factor = 0.4)
+        split.label(text = "Vertex Colors")
+        split.prop(lod_props, "lod1_vertex_color_mode", text="")
+        split = row.split(factor = 0.4)
+        split.label(text = "")
+        split.prop(lod_props, "lod2_vertex_color_mode", text="")
+        split = row.split(factor = 0.4)
+        split.label(text = "")
+        split.prop(lod_props, "lod3_vertex_color_mode", text="")
+        
+        col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0) #3.6 compat
         row = col.row(align=True)
         split = row.split(factor = 0.2)
         split.label(text = "pass 1")
@@ -107,12 +120,14 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
             row.prop(lod_props, "progressive_mode", text="Progressive mode")
             row = col.row(align=True)
             row.alignment = 'LEFT'
-            row.prop(lod_props, "vertex_color_mode", text="Vertex Colors")
-            row = col.row(align=True)
-            row.alignment = 'LEFT'
             row.prop(lod_props, "triangulate_after_shrinkwarp", text="Triangulate after shrinkwrap")
             row = col.row(align=True)
             row.prop(lod_props, "shrinkwarp_bottom_face", text="Shrinkwrap bottom face too")
+
+            row = col.row(align=True)
+            row.alignment = 'LEFT'
+            row.prop(lod_props, "vertex_color_gray_level", text="Gray level")
+
             row = col.row(align=True)
             row.alignment = 'LEFT'
             row.prop(lod_props, "minsizes_method", text="MinSize calculation method",expand = True)

@@ -257,7 +257,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         item.ui_lod_collection = self.base_collection
         item.ui_lod_level = 0
 
-        from_collection = self.base_collection
+        duplicate_from_collection = self.base_collection
+        upstream_collection = self.base_collection
         wm.progress_update(wm.progress)
         # Process LODs in order
         for i in [lod for lod in lods_to_generate]:
@@ -271,10 +272,10 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 if layer_lod_collection:
                     layer_lod_collection.exclude = False
                 # Clear existing objects in the collection
-                self.clear_collection(lod_collection)
+                utils.clear_collection(lod_collection)
         
             # Copy collection structure from base collection
-            lod_collection = utils.duplicate_collection(lod_collection, self.parent_collection,from_collection)
+            lod_collection = utils.duplicate_collection(lod_collection, self.parent_collection,duplicate_from_collection)
             # Set color tag for LOD collection
             lod_collection.color_tag = f'COLOR_0{i+1}'
             lod_collection.name = f"{self.base_name}_LOD{i:02d}"
@@ -283,25 +284,28 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             if layer_lod_collection:
                 layer_lod_collection.exclude = False
 
-            if scn.lod.progressive_mode:# or i == 2:
-                from_collection = lod_collection #else fallback to lod0
             # Add LOD to the list
             item = utils.get_generated_lod_list().add()
             item.ui_lod_collection = lod_collection
             item.ui_lod_level = i
             
             print(f"  Generating LOD{i:02d}")
-            self.process_objects( lod_collection, i, scn, context)
+            self.process_objects( lod_collection, i, scn, context,upstream_collection)
             processed_objects += base_mesh_count
             wm.progress =  math.ceil((processed_objects / total_objects) * 100)
             try:
                 context.workspace.status_text_set(f"Generating LODs: {wm.progress:.1f}%")
             except:
                 pass  # Fallback for older Blender versions
+
+            upstream_collection = lod_collection
+            if scn.lod.progressive_mode:
+                duplicate_from_collection = lod_collection#prepare next cycle
+             #else fallback to lod0
+
             wm.progress_update(wm.progress)
         #auto apply modifiers option
         if scn.lod.auto_apply_modifiers:
-
             for i in range(len(lods_to_generate)):
                 lod_level = lods_to_generate[i]
                 print(f"=== Auto applying modifiers  for lod {lod_level} ===")
@@ -312,8 +316,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     for obj in lod_collection.all_objects:
                         if obj.type == 'MESH':
                             utils.merge_vertices_by_distance(obj, context,lod_level)
-
-
 
         wm.progress =  95.0
         wm.progress_update(wm.progress)
@@ -362,12 +364,12 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         except Exception as e:
             print(f"Could not force scene update: {str(e)}")
         # Create LOD list string for the report 
-        vertex_color_mode = scn.lod.vertex_color_mode
+        #vertex_color_mode = scn.lod.vertex_color_mode
         lod_list_str = ", ".join([f"LOD{i:02d}" for i in lods_to_generate])
         wm.progress_end()
         wm.progress =  100.0
         wm.progress_update(wm.progress)
-        self.report({'INFO'}, f"Generated {lod_list_str}  Vertex Colors: {vertex_color_mode}")
+        self.report({'INFO'}, f"Generated {lod_list_str}")#  Vertex Colors: {vertex_color_mode}")
         return {'FINISHED'}
 
 
@@ -418,18 +420,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             self.create_white_vertex_colors(obj)
 
 
-    def clear_collection(self, collection):
-        """Clear all objects from a collection."""
-        for obj in list(collection.objects):
-            collection.objects.unlink(obj)
-            if obj.users == 0:
-                bpy.data.objects.remove(obj, do_unlink=True)
-        # Clear child collections recursively
-        for child in list(collection.children):
-            self.clear_collection(child)
-            bpy.data.collections.remove(child, do_unlink=True)
-
-
     def lodify_lod00_children(self, collection, color_tag):
         """Set color tags for child collections."""
         for obj in collection.objects:
@@ -469,7 +459,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         return proxy
   
 
-    def process_objects(self, target_collection, lod_level, scn, context):
+    def process_objects(self, target_collection, lod_level, scn, context,from_collection):
         print(f"Processing collection: {target_collection.name} ---------------------------------------------------------------------------------------")
         shrinkwrapped_proxies = {}
 
@@ -492,46 +482,48 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
                 utils.lodify_name(obj,lod_level)
                 # Apply vertex colors based on selected mode and LOD level
-                self.apply_vertex_colors_by_mode(obj, lod_level,gamma_corr, scn.lod.vertex_color_mode)
+                source_obj = utils.get_upstream_sibling(obj,from_collection)
+                self.apply_vertex_colors_by_mode(obj, lod_level,gamma_corr, scn,source_obj)
                 #pass 1
                 final_obj = self.apply_lod_generation_method(obj, lod_level, 1, scn, context, shrinkwrapped_proxies)
                 #pass 2
                 final_obj = self.apply_lod_generation_method(final_obj, lod_level, 2, scn, context, shrinkwrapped_proxies)
-                # Merge vertices by distance for the final object
-                # if final_obj:
-                #     utils.merge_vertices_by_distance(final_obj, context,lod_level)  #does nothing to shrinkwrap
             else:
                 utils.lodify_name(obj,lod_level)
     
         for original_obj in shrinkwrapped_proxies: #keys
             if shrinkwrapped_proxies[original_obj]:
-                #utils.merge_vertices_by_distance(shrinkwrapped_proxies[original_obj], context,lod_level) 
                 self.swap_original_by_proxy(shrinkwrapped_proxies[original_obj],original_obj,target_collection)
                 
         # Process child collections
         for child_target in target_collection.children:
             utils.lodify_name(child_target,lod_level)
-            self.process_objects(child_target, lod_level, scn, context)
+            self.process_objects(child_target, lod_level, scn, context,from_collection)
 
 
-    def apply_vertex_colors_by_mode(self, target_obj, lod_level, gamma_corr,vertex_color_mode = 'AUTO',transfer_source_obj = None):
+    def apply_vertex_colors_by_mode(self, target_obj, lod_level, gamma_corr,scn,transfer_source_obj = None):
         """Apply vertex colors based on the selected vertex color mode."""
-        print(f"  Applying vertex colors (Mode: {vertex_color_mode}) for LOD{lod_level:02d} object: {target_obj.name}")
-        
-        if vertex_color_mode == 'BAKE_ALL': #everything baked. materials lost
+
+        match lod_level:
+            case 1:
+                vertex_color_mode = scn.lod.lod1_vertex_color_mode 
+            case 2:
+                vertex_color_mode = scn.lod.lod2_vertex_color_mode 
+            case 3:
+                vertex_color_mode = scn.lod.lod3_vertex_color_mode
+   
+        if vertex_color_mode == 'BAKE': 
             self.bake_lod00_albedo_to_vertex_colors(target_obj,gamma_corr)
-            target_obj.data.materials.clear()  # Remove materials after baking
-        elif vertex_color_mode == 'AUTO':
-            if lod_level == 1:
-                self.create_white_vertex_colors(target_obj)
-            elif lod_level == 2 or lod_level == 3:  # LOD02/3 - bake from LOD00
-                self.bake_lod00_albedo_to_vertex_colors(target_obj,gamma_corr)
-                target_obj.data.materials.clear()  # Remove materials after baking
-        elif vertex_color_mode == 'WHITE_ONLY':
+            target_obj.data.materials.clear()  
+        elif vertex_color_mode == 'MATERIALS+WHITE':
             self.create_white_vertex_colors(target_obj)
-        elif vertex_color_mode == 'TRANSFER_ALL':   
+        elif vertex_color_mode == 'GRAY':
+            self.create_gray_vertex_colors(target_obj,scn.lod.vertex_color_gray_level)
+            target_obj.data.materials.clear() 
+        elif vertex_color_mode == 'TRANSFER_VERTEX':
             if transfer_source_obj:
                 self.transfer_vertex_colors_from_object(transfer_source_obj,target_obj)
+                target_obj.data.materials.clear()
     
 
 
@@ -558,7 +550,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 iterations = scn.lod.lod3_decimate_unsubdiv_iterations
                 gamma_corr = scn.lod.lod3_gamma_corr
 
-        vertex_color_mode = scn.lod.vertex_color_mode
+        #vertex_color_mode = scn.lod.vertex_color_mode
         
         print(f"  Applying LOD generation (Method: {generation_method}) for LOD{lod_level:02d}")
         
@@ -571,11 +563,11 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         elif generation_method == 'UNSUBDIVIDE':
             self.add_decimate_unsubdivide(obj, lod_level, iterations)
         elif generation_method.startswith('SHRINKWRAP'):
-            proxy = self.add_shrinkwrap_method(obj, lod_level, scn, context, vertex_color_mode,gamma_corr,generation_method,False)
+            proxy = self.add_shrinkwrap_method(obj, lod_level, scn, context,gamma_corr,generation_method,False)
             shrinkwrapped_proxies[obj] = proxy
             return proxy
         elif generation_method == ('JUST CUBES'):
-            proxy = self.add_shrinkwrap_method(obj, lod_level, scn, context, vertex_color_mode,gamma_corr,generation_method,True)
+            proxy = self.add_shrinkwrap_method(obj, lod_level, scn, context,gamma_corr,generation_method,True)
             shrinkwrapped_proxies[obj] = proxy
             return proxy
         return obj
@@ -617,7 +609,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         triangulate.min_vertices = 4 
         print(f"    Added triangulate modifier for LOD{lod_level:02d}")
 
-    def add_shrinkwrap_method(self, original_obj, lod_level, scn, context, vertex_color_mode,gamma_corr,generation_method,just_cubes):
+    def add_shrinkwrap_method(self, original_obj, lod_level, scn, context,gamma_corr,generation_method,just_cubes):
         """Apply shrinkwrap method to create a proxy object with individual cube for each mesh."""
         # Count vertices in the original mesh to determine subdivision level
         vertex_count = len(original_obj.data.vertices)
@@ -673,8 +665,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             utils.unparent_child(c)
             utils.reparent_child(c,proxy)
 
-
-
         if not just_cubes:
             # Enter edit mode, delete bottom face, and apply subdivisions
             bpy.ops.object.mode_set(mode='EDIT')
@@ -715,7 +705,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             
             print(f"    Added shrinkwrap modifier targeting '{original_obj.name}'")# (not applied - user can adjust and apply manually)")
         
-        self.apply_vertex_colors_by_mode(proxy, lod_level, gamma_corr,vertex_color_mode)   
+        self.apply_vertex_colors_by_mode(proxy, lod_level, gamma_corr,scn,original_obj) #CHECKME
         
         if not just_cubes:
             # Add followup Decimate modifier
@@ -1012,18 +1002,12 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             target_obj.select_set(True)  # Target
             bpy.context.view_layer.objects.active = target_obj  # Target must be active
             
-            # Use Data Transfer modifier for vertex color transfer
             data_transfer = target_obj.modifiers.new(name="TempDataTransfer", type='DATA_TRANSFER')
             data_transfer.object = source_obj
-            data_transfer.use_vert_data = True
-            data_transfer.data_types_verts = {'VGROUP_WEIGHTS'}  # This will be changed to vertex colors
-            
-            # Configure for vertex color transfer
+            # Configure for face corner color transfer, the only ones we care about for msfs
             data_transfer.use_loop_data = True
-            data_transfer.data_types_loops = {'VCOL'}
-            data_transfer.layers_vcol_select_src = 'ALL'
-            data_transfer.layers_vcol_select_dst = 'ALL'
-            
+            data_transfer.data_types_loops = {'COLOR_CORNER'}
+
             # Apply the modifier
             bpy.ops.object.modifier_apply(modifier=data_transfer.name)
             #print(f"    Successfully transferred vertex colors using Data Transfer modifier")
@@ -1052,23 +1036,23 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 print(f"    Warning: Could not fully restore original state: {str(restore_error)}")
 
 
-    # def create_gray_vertex_colors(self, obj):
-    #     """Apply gray vertex colors to the object."""
-    #     if obj.type != 'MESH':
-    #         return
+    def create_gray_vertex_colors(self, obj,gray_level):
+        """Apply gray vertex colors to the object."""
+        if obj.type != 'MESH':
+            return
         
-    #     # Ensure the object has vertex colors
-    #     if not obj.data.color_attributes:
-    #         obj.data.color_attributes.new(name="Color", type='FLOAT_COLOR', domain='CORNER')
+        # Ensure the object has vertex colors
+        if not obj.data.color_attributes:
+            obj.data.color_attributes.new(name="Color", type='FLOAT_COLOR', domain='CORNER')
         
-    #     # Set Color as the default color attribute
-    #     color_attr = obj.data.color_attributes.get("Color")
-    #     if color_attr:
-    #         obj.data.color_attributes.active_color = color_attr
-    #         # Fill with gray color (0.7, 0.7, 0.7, 1.0)
-    #         for i in range(len(color_attr.data)):
-    #             color_attr.data[i].color = (0.7, 0.7, 0.7, 1.0)
-    #         print(f"    Applied gray vertex colors to {obj.name}")
+        # Set Color as the default color attribute
+        color_attr = obj.data.color_attributes.get("Color")
+        if color_attr:
+            obj.data.color_attributes.active_color = color_attr
+
+            for i in range(len(color_attr.data)):
+                color_attr.data[i].color = (gray_level, gray_level, gray_level, 1.0)
+            print(f"    Applied gray vertex colors to {obj.name}")
 
 
 class LODIFY_OT_set_default_lod_values(bpy.types.Operator):
@@ -1126,7 +1110,6 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
     bl_description = "Apply all modifiers on objects in the specified LOD collection"
     bl_options = {'REGISTER', 'UNDO'}
 
-    
     lod_index: bpy.props.IntProperty(
         name="LOD Index",
         description="Index of the LOD collection in the list",
@@ -1134,9 +1117,6 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
     )
 
     def execute(self, context):
-        scn = context.scene
-        #lod_props = scn.lod
-        
         base_collection,parent_collection  = utils.find_base_collection()
         if not base_collection:
              self.report({'ERROR'}, "Base LOD collection (ending with _LOD00) not selected, click on a collection ending with _LOD00  in the outliner")

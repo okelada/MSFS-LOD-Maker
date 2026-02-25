@@ -525,6 +525,16 @@ def lodify_name(id,lod_level):
         #id.color_tag = f'COLOR_0{lod_level+1}'
     id.name = new_name
 
+def clear_collection(collection):
+    """Clear all objects from a collection."""
+    for obj in list(collection.objects):
+        collection.objects.unlink(obj)
+        if obj.users == 0:
+            bpy.data.objects.remove(obj, do_unlink=True)
+    # Clear child collections recursively
+    for child in list(collection.children):
+        clear_collection(child)
+        bpy.data.collections.remove(child, do_unlink=True)
 
 def remove_lod_collection(base_name,lod_level):
     lod_name = f"{base_name}_LOD{lod_level:02d}"
@@ -564,6 +574,20 @@ def remove_lod_collection(base_name,lod_level):
         lod_list[:] = [x for x in lod_list if x.ui_lod_level == lod_level]
         for lod in lod_list:
             lod_list.remove(lod)
+
+
+def get_upstream_sibling(obj,from_collection):
+    match_groups = re.match(r"(.+_LOD)(\d{2})",obj.name)
+    obj_base_name = match_groups.group(1)
+
+    for upstream_obj in from_collection.all_objects:
+        match_groups = re.match(r"(.+_LOD)(\d{2})",upstream_obj.name)
+        upstream_obj_base_name = match_groups.group(1)
+        if obj_base_name == upstream_obj_base_name:
+            return upstream_obj
+
+    print(f"No upstream sibling found for {obj.name}!")
+    return None
 
 
 #https://blenderartists.org/t/modifying-object-origin-with-python/507305/7
