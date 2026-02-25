@@ -55,10 +55,10 @@ I've adapted Devinci's code to my workflow and preferences
   - A gamma correction option exists to fight the decoloration problem.
   - Color policy can be set per lod level, these are the supported modes:
     - 'Materials + White' : Materials are kept plus MSFS mandatory white vertex colors included. Default for lod1.
-    - 'Bake': No materials, vertex colors baked are from albedo texture. Default for lod2 and lod3.
+    - 'Bake' : No materials, vertex colors baked are from albedo texture. Default for lod2 and lod3.
       >___Vertex color will be baked from the first node based material slot.___
     - 'Gray' : No materials, vertex colors will just be a configurable gray level, that could be enough for faraway objects.
-    - 'Transfer vertex colors' : No materials, Vertex color is transferred from upstream, alternative for lod3.
+    - 'Transfer colors' : No materials, Vertex color is transferred from upstream, alternative for lod3.
 
 <br>
 
