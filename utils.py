@@ -104,7 +104,7 @@ def remove_collision_boxes_to_generated_objects(base_name):
 
 
 def is_asobo_gizmo(obj):
-    if obj.type == 'EMPTY' and obj.name.startswith("Collision_Box_"):
+    if obj.type == 'EMPTY' and obj.name.startswith("MLM_Collision_Box_"):
         doc = bpy.ops.msfs2024.add_gizmo._get_doc()
         if "msfs_gizmo_type" in doc and  obj.msfs_gizmo_type == 'box':
             return True
@@ -141,7 +141,7 @@ def add_collision_boxes_to_generated_collections(base_name,lod0Only):
                     else:
                         bpy.ops.msfs2024.add_gizmo(gizmo_type = 'BOX') #SU5 SDK > 1.6.4
                     gizmo =  bpy.context.view_layer.objects.active
-                    gizmo.name = "Collision_Box_" + c.name
+                    gizmo.name = "MLM_Collision_Box_" + c.name
                     gizmo.location = Vector(position)
                     gizmo.scale = Vector(sizes)/2.0
                     break
@@ -169,7 +169,7 @@ def add_collision_boxes_to_generated_objects(base_name,lod0Only):
                 bpy.context.view_layer.objects.active = child        
                 bpy.ops.msfs2024.add_gizmo(msfs_gizmo_type = 'box') 
                 #bpy.ops.msfs2024.add_gizmo(gizmo_type = 'BOX')
-                bpy.context.view_layer.objects.active.name = "Collision_Box_" + child.name
+                bpy.context.view_layer.objects.active.name = "MLM_Collision_Box_" + child.name
         for gizmo in gizmo_objects_flat:
             bpy.data.objects.remove(gizmo,do_unlink=True,do_id_user=True,do_ui_user=True)
 
