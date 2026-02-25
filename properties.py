@@ -16,7 +16,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
     progressive_mode: BoolProperty(
         name="Inherit from higher lod",
         description="Inherit from closest more detailed lod instead of from lod0",
-        default=True
+        default=False
     )
 
     collision_boxes_to_lod0_only: BoolProperty(
@@ -71,7 +71,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('MATERIALS+WHITE',"Materials + White", "Keep materials + white vertex colors"),
             ('BAKE', "Bake", "Vertex colors baked from albedo"),
             ('GRAY', "Gray", "Gray level vertex colors"),
-            ('TRANSFER_VERTEX', "Transfer vertex colors", "Transferred vertex color from upstream")
+            ('TRANSFER_VERTEX', "Transfer colors", "Transferred vertex color from upstream, not recommended for all decimation methods")
         ],
         default='MATERIALS+WHITE'
     )
@@ -83,7 +83,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('MATERIALS+WHITE',"Materials + White", "Keep materials + white vertex colors"),
             ('BAKE', "Bake", "Vertex colors baked from albedo"),
             ('GRAY', "Gray", "Gray level vertex colors"),
-            ('TRANSFER_VERTEX', "Transfer vertex colors", "Transferred vertex color from upstream")
+            ('TRANSFER_VERTEX', "Transfer colors", "Transferred vertex color from upstream, not recommended for all decimation methods")
         ],
         default='BAKE'
     )
@@ -95,9 +95,9 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('MATERIALS+WHITE',"Materials + White", "Keep materials + white vertex colors"),
             ('BAKE', "Bake", "Vertex colors baked from albedo"),
             ('GRAY', "Gray", "Gray level vertex colors"),
-            ('TRANSFER_VERTEX', "Transfer vertex colors", "Transferred vertex color from upstream")
+            ('TRANSFER_VERTEX', "Transfer colors", "Transferred vertex color from upstream, not recommended for all decimation methods")
         ],
-        default='TRANSFER_VERTEX'
+        default='BAKE'
     )
 
     shrinkwarp_bottom_face: BoolProperty(
@@ -145,7 +145,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + UNSUBDIVIDE', "Shrinkwrap + Unsubdivide", "Use shrinkwrap method followed by unsubdivide for this LOD"),
             ('SHRINKWRAP + PLANAR', "Shrinkwrap + Planar", "Use shrinkwrap method followed by planar for this LOD"),
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
-            ('JUST CUBES', "Just cubes", "Only enclosing cubes for this LOD"),
+            ('JUST CUBES', "Just cubes", "Only material stripped, enclosing cubes for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
         default='PLANAR'
@@ -234,7 +234,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + UNSUBDIVIDE', "Shrinkwrap + Unsubdivide", "Use shrinkwrap method followed by unsubdivide for this LOD"),
             ('SHRINKWRAP + PLANAR', "Shrinkwrap + Planar", "Use shrinkwrap method followed by planar for this LOD"),
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
-            ('JUST CUBES', "Just cubes", "Only enclosing cubes for this LOD"),
+            ('JUST CUBES', "Just cubes", "Only material stripped, enclosing cubes for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
         default='PLANAR'
@@ -323,7 +323,7 @@ class LODIFY_props_scn(bpy.types.PropertyGroup):
             ('SHRINKWRAP + UNSUBDIVIDE', "Shrinkwrap + Unsubdivide", "Use shrinkwrap method followed by unsubdivide for this LOD"),
             ('SHRINKWRAP + PLANAR', "Shrinkwrap + Planar", "Use shrinkwrap method followed by planar for this LOD"),
             ('SHRINKWRAP + COLLAPSE', "Shrinkwrap + Collapse", "Use shrinkwrap method followed by collapse for this LOD"),
-            ('JUST CUBES', "Just cubes", "Only enclosing cubes for this LOD"),
+            ('JUST CUBES', "Just cubes", "Only material stripped, enclosing cubes for this LOD"),
             ('SKIP', "Do nothing", "Do nothing for this LOD")
         ],
         default='SHRINKWRAP + UNSUBDIVIDE'

@@ -576,15 +576,21 @@ def remove_lod_collection(base_name,lod_level):
             lod_list.remove(lod)
 
 
-def get_upstream_sibling(obj,from_collection):
-    match_groups = re.match(r"(.+_LOD)(\d{2})",obj.name)
-    obj_base_name = match_groups.group(1)
+def get_upstream_sibling(obj,lod_level,from_collection):
 
-    for upstream_obj in from_collection.all_objects:
-        match_groups = re.match(r"(.+_LOD)(\d{2})",upstream_obj.name)
-        upstream_obj_base_name = match_groups.group(1)
-        if obj_base_name == upstream_obj_base_name:
-            return upstream_obj
+    lod_list = list(get_lod_list(from_collection))
+    lod_list[:] = [x for x in lod_list if x.ui_lod_level == (lod_level - 1)]
+
+    if len(lod_list) > 0:
+        from_collection = lod_list[0].ui_lod_collection
+        match_groups = re.match(r"(.+_LOD)(\d{2})",obj.name)
+        obj_base_name = match_groups.group(1)
+
+        for upstream_obj in from_collection.all_objects:
+            match_groups = re.match(r"(.+_LOD)(\d{2})",upstream_obj.name)
+            upstream_obj_base_name = match_groups.group(1)
+            if obj_base_name == upstream_obj_base_name:
+                return upstream_obj
 
     print(f"No upstream sibling found for {obj.name}!")
     return None

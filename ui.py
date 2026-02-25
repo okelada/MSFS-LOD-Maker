@@ -59,13 +59,15 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
         row = col.row(align=True)
         split = row.split(factor = 0.4)
         split.label(text = "Vertex Colors")
-        split.prop(lod_props, "lod1_vertex_color_mode", text="")
+        split.prop(lod_props, "lod1_vertex_color_mode", text='')
+
         split = row.split(factor = 0.4)
-        split.label(text = "")
-        split.prop(lod_props, "lod2_vertex_color_mode", text="")
+        split.label(text = " ")
+        split.prop(lod_props, "lod2_vertex_color_mode", text='')
+        
         split = row.split(factor = 0.4)
-        split.label(text = "")
-        split.prop(lod_props, "lod3_vertex_color_mode", text="")
+        split.label(text = " ")
+        split.prop(lod_props, "lod3_vertex_color_mode", text='')
         
         col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0) #3.6 compat
         row = col.row(align=True)
@@ -73,10 +75,10 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
         split.label(text = "pass 1")
         split.prop(lod_props, "lod1_pass1_method", text="")
         split = row.split(factor = 0.2)
-        split.label(text = "")
+        split.label(text = " ")
         split.prop(lod_props, "lod2_pass1_method", text="")
         split = row.split(factor = 0.2)
-        split.label(text = "")
+        split.label(text = " ")
         split.prop(lod_props, "lod3_pass1_method", text="")
         col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0)#3.6 compat
         row = col.row(align=True)
@@ -84,10 +86,10 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
         split.label(text = "pass 2")
         split.prop(lod_props, "lod1_pass2_method", text="")
         split = row.split(factor = 0.2)
-        split.label(text = "")
+        split.label(text = " ")
         split.prop(lod_props, "lod2_pass2_method", text="")
         split = row.split(factor = 0.2)
-        split.label(text = "")
+        split.label(text = " ")
         split.prop(lod_props, "lod3_pass2_method", text="")
         col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0)#3.6 compat
         row = col.row(align=True)

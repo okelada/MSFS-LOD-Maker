@@ -316,6 +316,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     for obj in lod_collection.all_objects:
                         if obj.type == 'MESH':
                             utils.merge_vertices_by_distance(obj, context,lod_level)
+                            # source_obj = utils.get_upstream_sibling(obj,from_collection)
+                            # self.apply_vertex_colors_by_mode(obj, lod_level, gamma_corr,scn,original_obj)
 
         wm.progress =  95.0
         wm.progress_update(wm.progress)
@@ -482,8 +484,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
                 utils.lodify_name(obj,lod_level)
                 # Apply vertex colors based on selected mode and LOD level
-                source_obj = utils.get_upstream_sibling(obj,from_collection)
-                self.apply_vertex_colors_by_mode(obj, lod_level,gamma_corr, scn,source_obj)
+                source_obj = utils.get_upstream_sibling(obj,lod_level,from_collection)
+                self.apply_vertex_colors_by_mode(obj, lod_level,gamma_corr, scn,source_obj)#temporary if shrinkwrap
                 #pass 1
                 final_obj = self.apply_lod_generation_method(obj, lod_level, 1, scn, context, shrinkwrapped_proxies)
                 #pass 2
@@ -705,7 +707,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             
             print(f"    Added shrinkwrap modifier targeting '{original_obj.name}'")# (not applied - user can adjust and apply manually)")
         
-        self.apply_vertex_colors_by_mode(proxy, lod_level, gamma_corr,scn,original_obj) #CHECKME
+        #hoisted here to partially avoid too dark colors
+        self.apply_vertex_colors_by_mode(proxy, lod_level, gamma_corr,scn,original_obj) #CHECKME: not optimal for transfer
         
         if not just_cubes:
             # Add followup Decimate modifier
@@ -985,8 +988,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             #original_mode = bpy.context.mode
             
             # Switch to object mode if needed
-            if bpy.context.mode != 'OBJECT':
-                bpy.ops.object.mode_set(mode='OBJECT')
+            # if bpy.context.mode != 'OBJECT':
+            #     bpy.ops.object.mode_set(mode='OBJECT')
             
             # Ensure LOD03 has vertex colors
             if not target_obj.data.color_attributes:
@@ -997,11 +1000,11 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 target_obj.data.color_attributes.active_color = target_color_attr
             
             # Select both objects for data transfer
-            bpy.ops.object.select_all(action='DESELECT')
-            source_obj.select_set(True)  # Source
-            target_obj.select_set(True)  # Target
-            bpy.context.view_layer.objects.active = target_obj  # Target must be active
-            
+            #bpy.ops.object.select_all(action='DESELECT')
+            # source_obj.select_set(True)  # Source, not need to be active, facilitates things
+            #target_obj.select_set(True)  # Target
+            #bpy.context.view_layer.objects.active = target_obj  # Target must be active
+        
             data_transfer = target_obj.modifiers.new(name="TempDataTransfer", type='DATA_TRANSFER')
             data_transfer.object = source_obj
             # Configure for face corner color transfer, the only ones we care about for msfs
@@ -1016,24 +1019,24 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         except Exception as e:
             print(f"    Error during vertex color transfer: {str(e)}")
             # Remove data transfer modifier if it exists
-            try:
-                if "TempDataTransfer" in [mod.name for mod in target_obj.modifiers]:
-                    target_obj.modifiers.remove(target_obj.modifiers["TempDataTransfer"])
-            except:
-                pass
-            return False
+            # try:
+            #     if "TempDataTransfer" in [mod.name for mod in target_obj.modifiers]:
+            #         target_obj.modifiers.remove(target_obj.modifiers["TempDataTransfer"])
+            # except:
+            #     pass
+            # return False
             
-        finally:
-            # Restore original state
-            try:
-                bpy.ops.object.select_all(action='DESELECT')
-                for selected_obj in original_selection:
-                    if selected_obj and selected_obj.name in bpy.data.objects:
-                        selected_obj.select_set(True)
-                if original_active and original_active.name in bpy.data.objects:
-                    bpy.context.view_layer.objects.active = original_active
-            except Exception as restore_error:
-                print(f"    Warning: Could not fully restore original state: {str(restore_error)}")
+        #finally:
+            # # Restore original state
+            # try:
+            #     bpy.ops.object.select_all(action='DESELECT')
+            #     for selected_obj in original_selection:
+            #         if selected_obj and selected_obj.name in bpy.data.objects:
+            #             selected_obj.select_set(True)
+            #     if original_active and original_active.name in bpy.data.objects:
+            #         bpy.context.view_layer.objects.active = original_active
+            # except Exception as restore_error:
+            #     print(f"    Warning: Could not fully restore original state: {str(restore_error)}")
 
 
     def create_gray_vertex_colors(self, obj,gray_level):
