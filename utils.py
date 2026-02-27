@@ -98,7 +98,7 @@ def remove_collision_boxes_to_generated_objects(base_name):
                 if child.type == 'MESH':
                     for child_child in  child.children:
                         if is_asobo_gizmo(child_child):
-                                old_gizmo_objects_flat.append(child_child)
+                            old_gizmo_objects_flat.append(child_child)
             for gizmo in old_gizmo_objects_flat:
                 bpy.data.objects.remove(gizmo,do_unlink=True,do_id_user=True,do_ui_user=True)
 
@@ -294,8 +294,7 @@ def set_msfs_multi_exporter_lod_values(base_collection, forced_lod_values = None
         return False
 
 
-def merge_vertices_by_distance(obj, context,lod_level):
-    """Merge vertices by distance for the given object."""
+def post_modifiers_cleanup(obj, context,lod_level):
     if not obj.type == 'MESH':
         return
 
@@ -306,29 +305,19 @@ def merge_vertices_by_distance(obj, context,lod_level):
             merge_threshold = context.scene.lod.lod2_merge_threshold 
         case 3:
             merge_threshold = context.scene.lod.lod3_merge_threshold
-    if merge_threshold > 0.0:
-        # if context.view_layer.objects.active:
-        #     bpy.ops.object.mode_set(mode='OBJECT')
-        # bpy.ops.object.select_all(action='DESELECT')
-        # obj.select_set(True)
-        # context.view_layer.objects.active = obj
-        # # Enter edit mode and merge vertices by distance
-        # bpy.ops.object.mode_set(mode='EDIT')
-        # bpy.ops.mesh.select_mode(type='VERT')
-        # bpy.ops.mesh.select_all(action='SELECT')
-        # bpy.ops.mesh.remove_doubles(threshold=merge_threshold)  # 0.0001m threshold
-        # bpy.ops.object.mode_set(mode='OBJECT')
-        
 
+    if merge_threshold > 0.0:
         bm = bmesh.new()
         m  = obj.data
         bm.from_mesh(m)
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=merge_threshold)
+        for i in range(3):
+            bmesh.ops.dissolve_degenerate(bm, dist=merge_threshold,edges = bm.edges)
         bm.to_mesh(m)
         m.update()
         bm.clear()
         bm.free()
-        print(f"    Merged vertices by distance ({merge_threshold}m) for {obj.name}")
+        #print(f"    Merged vertices by distance ({merge_threshold}m) for {obj.name}")
 
 
 
