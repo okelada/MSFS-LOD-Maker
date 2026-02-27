@@ -260,6 +260,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         duplicate_from_collection = self.base_collection
         upstream_collection = self.base_collection
         wm.progress_update(wm.progress)
+
+        too_small_objects = []
         # Process LODs in order
         for i in [lod for lod in lods_to_generate]:
             lod_name = f"{self.base_name}_LOD{i:02d}"
@@ -290,7 +292,9 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             item.ui_lod_level = i
             
             print(f"  Generating LOD{i:02d}")
-            self.process_objects( lod_collection, i, scn, context,upstream_collection)
+            ####################################
+            self.process_objects( lod_collection, i, scn, context,upstream_collection,too_small_objects)
+            ####################################
             processed_objects += base_mesh_count
             wm.progress =  math.ceil((processed_objects / total_objects) * 100)
             try:
@@ -315,7 +319,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                 if error_count == 0:
                     for obj in lod_collection.all_objects:
                         if obj.type == 'MESH':
-                            utils.merge_vertices_by_distance(obj, context,lod_level)
+                            utils.post_modifiers_cleanup(obj, context,lod_level)
                             # source_obj = utils.get_upstream_sibling(obj,from_collection)
                             # self.apply_vertex_colors_by_mode(obj, lod_level, gamma_corr,scn,original_obj)
 
@@ -328,6 +332,12 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             pass  # Fallback for older Blender versions
         
         utils.reform_object_names()
+
+        #it's safe to delete small objects now
+        for small_obj in  too_small_objects:
+            bpy.data.objects.remove(small_obj, do_unlink=True)
+            #CHEKME: delete children too?
+
         utils.update_stats_report_and_minsizes(context,self.base_name)
 
         try:
@@ -461,10 +471,10 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         return proxy
   
 
-    def process_objects(self, target_collection, lod_level, scn, context,from_collection):
+    def process_objects(self, target_collection, lod_level, scn, context,from_collection,too_small_objects):
         print(f"Processing collection: {target_collection.name} ---------------------------------------------------------------------------------------")
         shrinkwrapped_proxies = {}
-
+  
         for obj in target_collection.objects:
             print(f"Processing obj: {obj.name} type: {obj.type}")
             if obj.type == 'MESH':
@@ -480,6 +490,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                         gamma_corr = scn.lod.lod3_gamma_corr
 
                 if small_object_threshold > 0 and self.is_object_too_small(obj, small_object_threshold):
+                    too_small_objects.append(obj)
                     continue
 
                 utils.lodify_name(obj,lod_level)
@@ -496,16 +507,17 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         for original_obj in shrinkwrapped_proxies: #keys
             if shrinkwrapped_proxies[original_obj]:
                 self.swap_original_by_proxy(shrinkwrapped_proxies[original_obj],original_obj,target_collection)
-                
+
         # Process child collections
         for child_target in target_collection.children:
             utils.lodify_name(child_target,lod_level)
-            self.process_objects(child_target, lod_level, scn, context,from_collection)
+            self.process_objects(child_target, lod_level, scn, context,from_collection,too_small_objects)
+
+
 
 
     def apply_vertex_colors_by_mode(self, target_obj, lod_level, gamma_corr,scn,transfer_source_obj = None):
         """Apply vertex colors based on the selected vertex color mode."""
-
         match lod_level:
             case 1:
                 vertex_color_mode = scn.lod.lod1_vertex_color_mode 
@@ -1146,7 +1158,7 @@ class LODIFY_OT_apply_lod_modifiers(bpy.types.Operator):
         if error_count == 0:
             for obj in lod_collection.all_objects:
                 if obj.type == 'MESH':
-                    utils.merge_vertices_by_distance(obj, context,lod_level)
+                    utils.post_modifiers_cleanup(obj, context,lod_level)
 
         if applied_count > 0:
             self.report({'INFO'}, f"Applied modifiers on {applied_count} objects in '{lod_collection.name}'")
