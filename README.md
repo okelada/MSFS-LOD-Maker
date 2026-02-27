@@ -55,8 +55,8 @@ Note that in order to create a lod level of the desired minsize manual edition m
     >___Color fidelity may be lost as geometry is decimated. Decoloration might appear where geometry is too far gone.___
   - Color policy can be set per lod level, these are the supported modes:
     - 'Materials + White' : Materials are kept plus MSFS mandatory white vertex colors included. Default for lod1.
-    - 'Bake' : No materials, vertex colors baked are from albedo texture. Default for lod2 and lod3.
-      >___Vertex color will be baked from the first node based material slot.___
+    - 'Bake' : No materials, vertex colors baked are from one albedo texture. Default for lod2 and lod3.
+      >___Vertex color will be baked from the first node based material slot in each object.___
 
       >___A gamma correction option exists to fight the decoloration problem.___
     - 'Gray' : No materials, vertex colors will just be a configurable gray level, that could be enough for faraway objects.
