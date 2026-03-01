@@ -17,6 +17,7 @@ Note that in order to create a lod level of the desired minsize manual edition m
   - Generation parameters are now published almost exhaustively.
   - Both decimation methods and parameters are now adjustable per lod level.
   - There is a results view with the generated vertices and polygons totals.
+    >___The vertices total is not what Asobo uses for LOD, but the accessors count in the gltf file, which also includes the vertex and/or face normals, etc in an indexed manner.___
   - Lod level collections visibility can be managed from the results view.
     >___Excluded content might not show up in the multi-exporter if 'visible_only' filter is active.___
   - A 'Cleanup' function has been added, this will remove all generated lods.
@@ -52,7 +53,7 @@ Note that in order to create a lod level of the desired minsize manual edition m
 
 **Color management**
   - Color can be: materials inherited from the lod0 data and/or just generated vertex colors.
-    >___Color fidelity may be lost as geometry is decimated. Decoloration might appear where geometry is too far gone.___
+    >___Color fidelity may be lost as geometry is decimated. Decoloration might appear where geometry is too far gone. Also check for flipped normals.___
   - Color policy can be set per lod level, these are the supported modes:
     - 'Materials + White' : Materials are kept plus MSFS mandatory white vertex colors included. Default for lod1.
     - 'Bake' : No materials, vertex colors baked are from one albedo texture. Default for lod2 and lod3.
