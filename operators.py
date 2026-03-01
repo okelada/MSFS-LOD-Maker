@@ -657,7 +657,8 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
 
         # Scale the proxy to match the target object's exact bounding box dimensions
         # Add a small margin (10%) to ensure complete coverage
-        margin_factor = 1.1
+        margin_factor = 1.1 if not just_cubes else 1.0
+        
         proxy.scale = (
             bbox_dimensions.x * margin_factor / 2,  # Cube default size is 2, so divide by 2
             bbox_dimensions.y * margin_factor / 2,
