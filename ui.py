@@ -41,13 +41,11 @@ class LODIFY_PT_generation_settings(bpy.types.Panel):
         box = layout.box()
         col = box.column()
         # LOD Selection
-        col.separator() 
-        col.label(text="LOD Generation Method", icon='MODIFIER')
-        # Create a row with checkboxes for LOD selection
         row = col.row(align=True)
-        row.prop(lod_props, "generate_lod01", text="LOD01" if lod_props.generate_lod01 else "LOD01 (frozen)")
-        row.prop(lod_props, "generate_lod02", text="LOD02" if lod_props.generate_lod02 else "LOD02 (frozen)") 
-        row.prop(lod_props, "generate_lod03", text="LOD03" if lod_props.generate_lod03 else "LOD03 (frozen)")
+        row.label(text="LOD01" if lod_props.generate_lod01 else "LOD01 (frozen)")
+        row.label(text="LOD02" if lod_props.generate_lod02 else "LOD02 (frozen)") 
+        row.label(text="LOD03" if lod_props.generate_lod03 else "LOD03 (frozen)")
+
         # Basic Settings
         col.separator()
         row = col.row(align=True)
@@ -203,6 +201,11 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
         if base_collection:
             button_text = "Generate LODs - " +  (base_collection.name if base_collection else "no selection")
             row.operator("lodify.generate_lod_decimate", text=button_text, icon='MOD_DECIM')
+            row = col.row(align=True)
+
+            row.prop(scn.lod, "generate_lod01", text="LOD01" if scn.lod.generate_lod01 else "LOD01 (frozen)")
+            row.prop(scn.lod, "generate_lod02", text="LOD02" if scn.lod.generate_lod02 else "LOD02 (frozen)") 
+            row.prop(scn.lod, "generate_lod03", text="LOD03" if scn.lod.generate_lod03 else "LOD03 (frozen)")
             #cleanup
             col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0)#3.6 compat
             row = col.row()
@@ -251,22 +254,22 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             col.label(text=f"{srp0[2] if srp0[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            lodText = "LOD1" if scn.lod.generate_lod01 else "[LOD1]"
-            col.operator("lodify.select",text = lodText if minsizes[1] == -1.0 else f"{lodText} ({minsizes[1]:.01f})   {-percent_reduction[1]:+.0f}%").lod_level = 1
+            lodText = "LOD1" 
+            col.operator("lodify.select",text = lodText if minsizes[1] == -1.0 else f"{lodText} ({minsizes[1]:.01f})   {-percent_reduction[1]:+.0f}%", icon = "UNLOCKED"  if scn.lod.generate_lod01 else "LOCKED").lod_level = 1
             col.label(text=f"{srp1[0] if srp1[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp1[1] if srp1[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp1[2] if srp1[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            lodText = "LOD2" if scn.lod.generate_lod02 else "[LOD2]"
-            col.operator("lodify.select",text = lodText if minsizes[2] == -1.0 else f"{lodText} ({minsizes[2]:.01f})   {-percent_reduction[2]:+.0f}%").lod_level = 2
+            lodText = "LOD2"
+            col.operator("lodify.select",text = lodText if minsizes[2] == -1.0 else f"{lodText} ({minsizes[2]:.01f})   {-percent_reduction[2]:+.0f}%", icon = "UNLOCKED"  if scn.lod.generate_lod02 else "LOCKED").lod_level = 2
             col.label(text=f"{srp2[0] if srp2[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp2[1] if srp2[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp2[2] if srp2[2] != -1.0 else 'N/A'}")
             col = row.column(align=True)
             col.alignment = 'RIGHT'
-            lodText = "LOD3" if scn.lod.generate_lod03 else "[LOD3]"
-            col.operator("lodify.select",text = lodText if minsizes[3] == -1.0 else f"{lodText} ({minsizes[3]:.01f})   {-percent_reduction[3]:+.0f}%").lod_level = 3
+            lodText = "LOD3"
+            col.operator("lodify.select",text = lodText if minsizes[3] == -1.0 else f"{lodText} ({minsizes[3]:.01f})   {-percent_reduction[3]:+.0f}%", icon = "UNLOCKED"  if scn.lod.generate_lod03 else "LOCKED").lod_level = 3
             col.label(text=f"{srp3[0] if srp3[0] != -1.0 else 'N/A'}")
             col.label(text=f"{srp3[1] if srp3[1] != -1.0 else 'N/A'}")
             col.label(text=f"{srp3[2] if srp3[2] != -1.0 else 'N/A'}")
