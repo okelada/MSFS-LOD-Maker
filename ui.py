@@ -203,9 +203,9 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
             row.operator("lodify.generate_lod_decimate", text=button_text, icon='MOD_DECIM')
             row = col.row(align=True)
 
-            row.prop(scn.lod, "generate_lod01", text="LOD01" if scn.lod.generate_lod01 else "LOD01 (frozen)")
-            row.prop(scn.lod, "generate_lod02", text="LOD02" if scn.lod.generate_lod02 else "LOD02 (frozen)") 
-            row.prop(scn.lod, "generate_lod03", text="LOD03" if scn.lod.generate_lod03 else "LOD03 (frozen)")
+            row.prop(scn.lod, "generate_lod01", text="LOD01")
+            row.prop(scn.lod, "generate_lod02", text="LOD02")
+            row.prop(scn.lod, "generate_lod03", text="LOD03")
             #cleanup
             col.separator(factor = 2.0,type = 'LINE') if bpy.app.version >= (4, 2, 0) else  col.separator(factor = 2.0)#3.6 compat
             row = col.row()

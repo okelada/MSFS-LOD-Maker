@@ -17,30 +17,28 @@ from mathutils import Vector
 import math
 from . import utils
 
-class DialogOperator(bpy.types.Operator):
-    bl_idname = "object.dialog_operator"
-    bl_label = "Simple Dialog Operator"
+# class DialogOperator(bpy.types.Operator):
+#     bl_idname = "object.dialog_operator"
+#     bl_label = "Simple Dialog Operator"
 
-    my_float: bpy.props.FloatProperty(name="Some Floating Point")
-    my_bool: bpy.props.BoolProperty(name="Toggle Option")
-    my_string: bpy.props.StringProperty(name="String Value")
+#     my_float: bpy.props.FloatProperty(name="Some Floating Point")
+#     my_bool: bpy.props.BoolProperty(name="Toggle Option")
+#     my_string: bpy.props.StringProperty(name="String Value")
 
-    def execute(self, context):
-        message = (
-            "Popup Values: %f, %d, '%s'" %
-            (self.my_float, self.my_bool, self.my_string)
-        )
-        self.report({'INFO'}, message)
-        return {'FINISHED'}
+#     def execute(self, context):
+#         message = (
+#             "Popup Values: %f, %d, '%s'" %
+#             (self.my_float, self.my_bool, self.my_string)
+#         )
+#         self.report({'INFO'}, message)
+#         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
+#     def invoke(self, context, event):
+#         wm = context.window_manager
+#         return wm.invoke_props_dialog(self)
     
-    # def cancel(self, context):
-    #     bpy.ops.object.dialog_operator('INVOKE_DEFAULT', my_float=self.my_float, my_bool=self.my_bool, my_string=self.my_string)
-
-
+#     # def cancel(self, context):
+#     #     bpy.ops.object.dialog_operator('INVOKE_DEFAULT', my_float=self.my_float, my_bool=self.my_bool, my_string=self.my_string)
 
 
 class LODIFY_OT_cleanup(bpy.types.Operator):
@@ -293,7 +291,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             
             print(f"  Generating LOD{i:02d}")
             ####################################
-            self.process_objects( lod_collection, i, scn, context,upstream_collection,too_small_objects)
+            self.process_collection( lod_collection, i, scn, context,upstream_collection,too_small_objects)
             ####################################
             processed_objects += base_mesh_count
             wm.progress =  math.ceil((processed_objects / total_objects) * 100)
@@ -320,8 +318,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
                     for obj in lod_collection.all_objects:
                         if obj.type == 'MESH':
                             utils.post_modifiers_cleanup(obj, context,lod_level)
-                            # source_obj = utils.get_upstream_sibling(obj,from_collection)
-                            # self.apply_vertex_colors_by_mode(obj, lod_level, gamma_corr,scn,original_obj)
 
         wm.progress =  95.0
         wm.progress_update(wm.progress)
@@ -471,7 +467,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         return proxy
   
 
-    def process_objects(self, target_collection, lod_level, scn, context,from_collection,too_small_objects):
+    def process_collection(self, target_collection, lod_level, scn, context,from_collection,too_small_objects):
         print(f"Processing collection: {target_collection.name} ---------------------------------------------------------------------------------------")
         shrinkwrapped_proxies = {}
   
@@ -511,7 +507,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         # Process child collections
         for child_target in target_collection.children:
             utils.lodify_name(child_target,lod_level)
-            self.process_objects(child_target, lod_level, scn, context,from_collection,too_small_objects)
+            self.process_collection(child_target, lod_level, scn, context,from_collection,too_small_objects)
 
 
 
@@ -995,15 +991,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
         print(f"    Transferring vertex colors from source '{source_obj.name}' to target '{target_obj.name}'")
         
         try:
-            # Store current state
-            original_selection = bpy.context.selected_objects
-            original_active = bpy.context.active_object
-            #original_mode = bpy.context.mode
-            
-            # Switch to object mode if needed
-            # if bpy.context.mode != 'OBJECT':
-            #     bpy.ops.object.mode_set(mode='OBJECT')
-            
             # Ensure LOD03 has vertex colors
             if not target_obj.data.color_attributes:
                 target_obj.data.color_attributes.new(name="Color", type='FLOAT_COLOR', domain='CORNER')
@@ -1011,12 +998,6 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             target_color_attr = target_obj.data.color_attributes.get("Color")
             if target_color_attr:
                 target_obj.data.color_attributes.active_color = target_color_attr
-            
-            # Select both objects for data transfer
-            #bpy.ops.object.select_all(action='DESELECT')
-            # source_obj.select_set(True)  # Source, not need to be active, facilitates things
-            #target_obj.select_set(True)  # Target
-            #bpy.context.view_layer.objects.active = target_obj  # Target must be active
         
             data_transfer = target_obj.modifiers.new(name="TempDataTransfer", type='DATA_TRANSFER')
             data_transfer.object = source_obj
@@ -1031,25 +1012,7 @@ class LODIFY_OT_generate_lod_decimate(bpy.types.Operator):
             
         except Exception as e:
             print(f"    Error during vertex color transfer: {str(e)}")
-            # Remove data transfer modifier if it exists
-            # try:
-            #     if "TempDataTransfer" in [mod.name for mod in target_obj.modifiers]:
-            #         target_obj.modifiers.remove(target_obj.modifiers["TempDataTransfer"])
-            # except:
-            #     pass
-            # return False
-            
-        #finally:
-            # # Restore original state
-            # try:
-            #     bpy.ops.object.select_all(action='DESELECT')
-            #     for selected_obj in original_selection:
-            #         if selected_obj and selected_obj.name in bpy.data.objects:
-            #             selected_obj.select_set(True)
-            #     if original_active and original_active.name in bpy.data.objects:
-            #         bpy.context.view_layer.objects.active = original_active
-            # except Exception as restore_error:
-            #     print(f"    Warning: Could not fully restore original state: {str(restore_error)}")
+
 
 
     def create_gray_vertex_colors(self, obj,gray_level):
@@ -1187,7 +1150,7 @@ classes = (
     LODIFY_OT_add_collision_boxes,
     LODIFY_OT_remove_collision_boxes,
     LODIFY_props_list,
-    DialogOperator
+   # DialogOperator
 )
 
 

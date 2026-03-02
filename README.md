@@ -42,13 +42,13 @@ I've adapted Devinci's code to my workflow and preferences.<br>
     
   - An optional custom token can be inserted in the middle of the children's names, to help the multi-exporter recognize your lod groups.
     >___Even if this addon supports nested IDs, the multi-exporter can have a hard time to group them properly.<br>If everything fails, you will have to enable or disable them appropiately and assign minsizes manually.<br>___
-  - Ability to add/remove simple collision boxes to all objects or collections containing objects with one click. You can add your own ones to model irregular shapes. In that case make sure their name doesn't start with "MLM_Collision_Box" or they could be deleted by the addon.<br>___Only SU4/SDK <= 1.5.7 for now.___
+  - Ability to add/remove simple collision boxes to all objects or collections containing objects with one click. You can add your own ones to model irregular shapes. In that case make sure their names don't start with "MLM_Collision_Box" or they could be deleted by the addon.<br>___Only SU4/SDK <= 1.5.7 for now.___
 
 **Decimation**
   - There are two decimation passes available, shrinkwrap being possible only in the first one.
   - Shrinkwrap will be post-processed in the same pass via planar, collapse or subdivide decimation.
   - Triangulation after shrinkwrap available to deal with generated non-planar faces.
-  - A "just cubes" nuclear option method has been added to generate a lod with few vertices and no materials. Specially useful to create a lod3 when one FS object is composed of several blender objects, as cubes should be easy to modify by hand to get a general shape.
+  - A "just cubes" nuclear option method has been added to generate a lod3 with few vertices and no materials.
   - A final post-process will apply 'merge by distance' and several passes of 'degenerate dissolve' as soon as modifiers are applied.
 
 **Color management**
