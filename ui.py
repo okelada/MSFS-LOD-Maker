@@ -201,8 +201,8 @@ class LODIFY_PT_generation_actions(bpy.types.Panel):
         if base_collection:
             button_text = "Generate LODs - " +  (base_collection.name if base_collection else "no selection")
             row.operator("lodify.generate_lod_decimate", text=button_text, icon='MOD_DECIM')
-            row = col.row(align=True)
-
+            row = col.row()
+            row.alignment = 'CENTER'
             row.prop(scn.lod, "generate_lod01", text="LOD01")
             row.prop(scn.lod, "generate_lod02", text="LOD02")
             row.prop(scn.lod, "generate_lod03", text="LOD03")
